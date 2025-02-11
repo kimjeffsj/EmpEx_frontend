@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { EyeIcon, EyeOffIcon } from "lucide-react";
+import { useAuthStore } from "@/store/auth.store";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -18,7 +19,7 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const { login, error, isLoading, clearError } = useAuthStore();
 
   const {
     register,
@@ -29,19 +30,27 @@ export function LoginForm() {
   });
 
   const onSubmit = async (data: LoginFormData) => {
-    setIsLoading(true);
     try {
-      // TODO: Implement login logic
-      console.log(data);
+      await login(data);
     } catch (error) {
       console.error(error);
-    } finally {
-      setIsLoading(false);
     }
   };
 
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(clearError, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [error, clearError]);
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      {error && (
+        <div className="p-3 text-sm text-destructive bg-destructive/10 rounded-md">
+          {error}
+        </div>
+      )}
       <div className="space-y-2">
         <Label htmlFor="email">Email</Label>
         <Input
