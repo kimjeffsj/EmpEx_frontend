@@ -1,3 +1,4 @@
+// import { DashboardContent } from "@/components/dashboard/manager/dsahboard-content";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { Card } from "@/components/ui/card";
 import {
@@ -110,4 +111,10 @@ export default function ManagerDashboard() {
       </div>
     </div>
   );
+
+  /**
+   * TODO: Connect with API, currently api does not have designated
+   * stat endpoint.
+   */
+  // return <DashboardContent />;
 }
