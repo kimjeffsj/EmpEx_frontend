@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { EyeIcon, EyeOffIcon } from "lucide-react";
 import { useAuthStore } from "@/store/auth.store";
+import { useRouter } from "next/navigation";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -18,6 +19,7 @@ const loginSchema = z.object({
 type LoginFormData = z.infer<typeof loginSchema>;
 
 export function LoginForm() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const { login, error, isLoading, clearError } = useAuthStore();
 
@@ -30,10 +32,12 @@ export function LoginForm() {
   });
 
   const onSubmit = async (data: LoginFormData) => {
-    try {
-      await login(data);
-    } catch (error) {
-      console.error(error);
+    const success = await login(data);
+    if (success) {
+      const user = useAuthStore.getState().user;
+      router.push(
+        user?.role === "MANAGER" ? "/manager/dashboard" : "/dashboard"
+      );
     }
   };
 

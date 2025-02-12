@@ -1,3 +1,5 @@
+"use client";
+
 import { Suspense } from "react";
 import { SidebarNav } from "@/components/dashboard/sidebar-nav";
 import { UserNav } from "@/components/dashboard/user-nav";

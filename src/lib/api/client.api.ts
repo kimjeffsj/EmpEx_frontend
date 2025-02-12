@@ -1,3 +1,4 @@
+import { useAuthStore } from "@/store/auth.store";
 import axios from "axios";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
@@ -11,7 +12,14 @@ export const api = axios.create({
 
 // Request interceptor for adding auth token
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("accessToken");
+  const cookies = document.cookie.split(";").reduce((acc, cookie) => {
+    const [key, value] = cookie.trim().split("=");
+    acc[key] = value;
+    return acc;
+  }, {} as Record<string, string>);
+
+  const token = cookies["accessToken"];
+
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -29,20 +37,18 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        const refreshToken = localStorage.getItem("refreshToken");
-        const response = await api.post("/auth/refresh", { refreshToken });
+        const authStore = useAuthStore.getState();
+        const newAccessToken = await authStore.refreshToken();
 
-        const { accessToken } = response.data;
-        localStorage.setItem("accessToken", accessToken);
-
-        originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
         return api(originalRequest);
       } catch (refreshError) {
-        console.error("Token refresh failed:", refreshError);
-        // Refresh token failed, logout user
-        localStorage.removeItem("accessToken");
-        localStorage.removeItem("refreshToken");
-        window.location.href = "/login";
+        return Promise.reject(refreshError);
+        // console.error("Token refresh failed:", refreshError);
+        // // Refresh token failed, logout user
+        // localStorage.removeItem("accessToken");
+        // localStorage.removeItem("refreshToken");
+        // window.location.href = "/login";
       }
     }
 

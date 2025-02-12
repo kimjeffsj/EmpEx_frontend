@@ -1,5 +1,11 @@
-import { api } from "@/lib/api/client";
-import { AuthResponse, LoginCredentials, User } from "@/types/auth.types";
+import { api } from "@/lib/api/client.api";
+import { ApiResponse } from "@/types/api.types";
+import {
+  AuthResponse,
+  LoginCredentials,
+  RefreshTokenResponse,
+  User,
+} from "@/types/auth.types";
 import { create } from "zustand";
 
 interface AuthState {
@@ -7,8 +13,9 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
-  login: (credentials: LoginCredentials) => Promise<void>;
+  login: (credentials: LoginCredentials) => Promise<boolean>;
   logout: () => Promise<void>;
+  refreshToken: () => Promise<string>;
   clearError: () => void;
 }
 
@@ -21,11 +28,14 @@ export const useAuthStore = create<AuthState>((set) => ({
   login: async (credentials) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await api.post<AuthResponse>("/auth/login", credentials);
-      const { accessToken, refreshToken, user } = response.data;
+      const response = await api.post<ApiResponse<AuthResponse>>(
+        "/auth/login",
+        credentials
+      );
+      const { accessToken, refreshToken, user } = response.data.data!;
 
-      localStorage.setItem("accessToken", accessToken);
-      localStorage.setItem("refreshToken", refreshToken);
+      document.cookie = `accessToken=${accessToken}; path=/; max-age=900`; // 15분
+      document.cookie = `refreshToken=${refreshToken}; path=/; max-age=604800`; // 7일
 
       set({
         user,
@@ -34,24 +44,21 @@ export const useAuthStore = create<AuthState>((set) => ({
       });
 
       // Redirect based on user role
-      if (user.role === "MANAGER") {
-        window.location.href = "/manager/dashboard";
-      } else {
-        window.location.href = "/dashboard";
-      }
+      return true;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       set({
         error: error.response?.data?.error?.message || "Failed to login",
         isLoading: false,
       });
+      return false;
     }
   },
 
   logout: async () => {
     set({ isLoading: true });
     try {
-      await api.post("/auth/logout");
+      await api.post<ApiResponse<null>>("/auth/logout");
     } catch (error) {
       console.error("Logout error:", error);
     } finally {
@@ -63,6 +70,38 @@ export const useAuthStore = create<AuthState>((set) => ({
         isLoading: false,
       });
       window.location.href = "/login";
+    }
+  },
+
+  refreshToken: async () => {
+    try {
+      const refreshToken = localStorage.getItem("refreshToken");
+      if (!refreshToken) throw new Error("No refresh token");
+
+      const response = await api.post<ApiResponse<RefreshTokenResponse>>(
+        "/auth/refresh",
+        {
+          refreshToken,
+        }
+      );
+
+      const { accessToken, refreshToken: newRefreshToken } =
+        response.data.data!;
+
+      localStorage.setItem("accessToken", accessToken);
+      localStorage.setItem("refreshToken", newRefreshToken);
+
+      return accessToken;
+    } catch (error) {
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+      set({
+        user: null,
+        isAuthenticated: false,
+        isLoading: false,
+      });
+      window.location.href = "/login";
+      throw error;
     }
   },
 
