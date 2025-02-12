@@ -44,11 +44,6 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (refreshError) {
         return Promise.reject(refreshError);
-        // console.error("Token refresh failed:", refreshError);
-        // // Refresh token failed, logout user
-        // localStorage.removeItem("accessToken");
-        // localStorage.removeItem("refreshToken");
-        // window.location.href = "/login";
       }
     }
 
