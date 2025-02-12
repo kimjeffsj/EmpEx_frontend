@@ -15,10 +15,10 @@ import {
   Clock,
 } from "lucide-react";
 import { format } from "date-fns";
-import { useDashboardStore } from "@/store/dashboard.store";
+import { useManagerDashboardStore } from "@/store/manager-dashboard.store";
 
 export function DashboardContent() {
-  const { stats, isLoading, error, fetchStats } = useDashboardStore();
+  const { stats, isLoading, error, fetchStats } = useManagerDashboardStore();
 
   useEffect(() => {
     fetchStats();

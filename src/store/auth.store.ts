@@ -58,12 +58,25 @@ export const useAuthStore = create<AuthState>((set) => ({
   logout: async () => {
     set({ isLoading: true });
     try {
-      await api.post<ApiResponse<null>>("/auth/logout");
+      const accessToken = localStorage.getItem("accessToken");
+      if (accessToken) {
+        await api.post<ApiResponse<null>>("/auth/logout", null, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
+      }
     } catch (error) {
       console.error("Logout error:", error);
     } finally {
+      document.cookie =
+        "accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+      document.cookie =
+        "refreshToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+
       localStorage.removeItem("accessToken");
       localStorage.removeItem("refreshToken");
+
       set({
         user: null,
         isAuthenticated: false,
