@@ -1,122 +1,161 @@
-import { api } from "@/lib/api/client.api";
-import { ApiResponse } from "@/types/api.types";
-import {
-  AuthResponse,
-  LoginCredentials,
-  RefreshTokenResponse,
-  User,
-} from "@/types/auth.types";
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import { authApi } from "@/lib/api/auth.api";
+import { LoginCredentials, User } from "@/types/auth.types";
+import { getAuthToken } from "@/lib/api/client.api";
 
 interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
+  initializeAuth: () => Promise<void>;
   login: (credentials: LoginCredentials) => Promise<boolean>;
-  logout: () => Promise<void>;
+  logout: () => void;
   refreshToken: () => Promise<string>;
   clearError: () => void;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
-  user: null,
-  isAuthenticated: false,
-  isLoading: false,
-  error: null,
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set) => ({
+      user: null,
+      isAuthenticated: false,
+      isLoading: false,
+      error: null,
 
-  login: async (credentials) => {
-    set({ isLoading: true, error: null });
-    try {
-      const response = await api.post<ApiResponse<AuthResponse>>(
-        "/auth/login",
-        credentials
-      );
-      const { accessToken, refreshToken, user } = response.data.data!;
+      initializeAuth: async () => {
+        try {
+          set({ isLoading: true });
 
-      document.cookie = `accessToken=${accessToken}; path=/; max-age=900`; // 15분
-      document.cookie = `refreshToken=${refreshToken}; path=/; max-age=604800`; // 7일
+          // 1. 현재 토큰 체크
+          const token = getAuthToken();
+          if (!token) {
+            set({
+              user: null,
+              isAuthenticated: false,
+              isLoading: false,
+            });
+            return;
+          }
 
-      set({
-        user,
-        isAuthenticated: true,
-        isLoading: false,
-      });
-
-      // Redirect based on user role
-      return true;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      set({
-        error: error.response?.data?.error?.message || "Failed to login",
-        isLoading: false,
-      });
-      return false;
-    }
-  },
-
-  logout: async () => {
-    set({ isLoading: true });
-    try {
-      const accessToken = localStorage.getItem("accessToken");
-      if (accessToken) {
-        await api.post<ApiResponse<null>>("/auth/logout", null, {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        });
-      }
-    } catch (error) {
-      console.error("Logout error:", error);
-    } finally {
-      document.cookie =
-        "accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-      document.cookie =
-        "refreshToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("refreshToken");
-
-      set({
-        user: null,
-        isAuthenticated: false,
-        isLoading: false,
-      });
-      window.location.href = "/login";
-    }
-  },
-
-  refreshToken: async () => {
-    try {
-      const refreshToken = localStorage.getItem("refreshToken");
-      if (!refreshToken) throw new Error("No refresh token");
-
-      const response = await api.post<ApiResponse<RefreshTokenResponse>>(
-        "/auth/refresh",
-        {
-          refreshToken,
+          // 2. 사용자 정보 가져오기
+          const response = await authApi.getCurrentUser();
+          if (response?.data) {
+            set({
+              user: response.data,
+              isAuthenticated: true,
+              isLoading: false,
+            });
+          }
+        } catch (error) {
+          console.error("Auth initialization failed:", error);
+          set({
+            user: null,
+            isAuthenticated: false,
+            isLoading: false,
+          });
         }
-      );
+      },
 
-      const { accessToken, refreshToken: newRefreshToken } =
-        response.data.data!;
+      login: async (credentials) => {
+        set({ isLoading: true, error: null });
+        try {
+          const response = await authApi.login(credentials);
+          const { user } = response.data!;
 
-      localStorage.setItem("accessToken", accessToken);
-      localStorage.setItem("refreshToken", newRefreshToken);
+          set({
+            user,
+            isAuthenticated: true,
+            isLoading: false,
+          });
 
-      return accessToken;
-    } catch (error) {
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("refreshToken");
-      set({
-        user: null,
-        isAuthenticated: false,
-        isLoading: false,
-      });
-      window.location.href = "/login";
-      throw error;
+          return true;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } catch (error: any) {
+          set({
+            error: error.response?.data?.error?.message || "Failed to login",
+            isLoading: false,
+          });
+          return false;
+        }
+      },
+
+      logout: async () => {
+        try {
+          set({ isLoading: true });
+
+          document.cookie = "logging_out=true; path=/; max-age=5";
+
+          // Call logout API
+          await authApi.logout();
+
+          // Clear local storage
+          localStorage.removeItem("auth-storage");
+
+          // Reset state
+          set({
+            user: null,
+            isAuthenticated: false,
+            isLoading: false,
+            error: null,
+          });
+        } catch (error) {
+          console.error("Logout error:", error);
+          // Even if API call fails, clear local state
+          set({
+            user: null,
+            isAuthenticated: false,
+            isLoading: false,
+            error: null,
+          });
+        }
+      },
+
+      refreshToken: async () => {
+        try {
+          const cookies = document.cookie.split(";").reduce((acc, cookie) => {
+            const [key, value] = cookie.trim().split("=");
+            acc[key] = value;
+            return acc;
+          }, {} as Record<string, string>);
+
+          const refreshToken = cookies["refreshToken"];
+          if (!refreshToken) throw new Error("No refresh token");
+
+          const response = await authApi.refreshToken(refreshToken);
+          const { accessToken, refreshToken: newRefreshToken } = response.data!;
+
+          document.cookie = `accessToken=${accessToken}; path=/; max-age=900`;
+          document.cookie = `refreshToken=${newRefreshToken}; path=/; max-age=604800`;
+
+          return accessToken;
+        } catch (error) {
+          // Clear cookies and state on refresh token failure
+          document.cookie =
+            "accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+          document.cookie =
+            "refreshToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+
+          set({
+            user: null,
+            isAuthenticated: false,
+            isLoading: false,
+          });
+
+          window.location.href = "/login";
+          throw error;
+        }
+      },
+
+      clearError: () => set({ error: null }),
+    }),
+    {
+      name: "auth-storage",
+      partialize: (state) => ({
+        user: state.user,
+        isAuthenticated: state.isAuthenticated,
+      }),
     }
-  },
-
-  clearError: () => set({ error: null }),
-}));
+  )
+);

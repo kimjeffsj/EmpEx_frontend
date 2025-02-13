@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense } from "react";
+import { useEffect } from "react";
 import { SidebarNav } from "@/components/dashboard/sidebar-nav";
 import { UserNav } from "@/components/dashboard/user-nav";
 import {
@@ -11,6 +11,9 @@ import {
   FileText,
 } from "lucide-react";
 import { useAuthStore } from "@/store/auth.store";
+import { LoadingDialog } from "@/components/ui/loading-dialog";
+import { useRouter } from "next/navigation";
+import { getAuthToken } from "@/lib/api/client.api";
 
 const employeeNavItems = [
   {
@@ -58,9 +61,36 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user } = useAuthStore();
-  const navItems =
-    user?.role === "MANAGER" ? managerNavItems : employeeNavItems;
+  const router = useRouter();
+  const { user, isLoading, isAuthenticated, initializeAuth } = useAuthStore();
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const token = getAuthToken();
+        if (!isAuthenticated && token) {
+          await initializeAuth();
+        } else if (!isAuthenticated && !token) {
+          router.replace("/login");
+        }
+      } catch (error) {
+        console.error("Auth check failed:", error);
+        router.replace("/login");
+      }
+    };
+
+    checkAuth();
+  }, [isAuthenticated, initializeAuth, router]);
+
+  if (isLoading) {
+    return <LoadingDialog open={true} title="Loading..." />;
+  }
+
+  if (!user || !isAuthenticated) {
+    return <LoadingDialog open={true} title="Checking authentication..." />;
+  }
+
+  const navItems = user.role === "MANAGER" ? managerNavItems : employeeNavItems;
 
   return (
     <div className="min-h-screen">
@@ -69,7 +99,7 @@ export default function DashboardLayout({
         <div className="flex h-16 items-center px-4">
           <div className="font-bold text-xl">EmpEx</div>
           <div className="ml-auto flex items-center space-x-4">
-            <UserNav />
+            <UserNav user={user} />
           </div>
         </div>
       </div>
@@ -82,9 +112,7 @@ export default function DashboardLayout({
         </div>
 
         {/* Content */}
-        <div className="flex-1 p-8">
-          <Suspense fallback={<div>Loading...</div>}>{children}</Suspense>
-        </div>
+        <div className="flex-1 p-8">{children}</div>
       </div>
     </div>
   );

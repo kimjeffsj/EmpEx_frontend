@@ -1,37 +1,76 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-// Middleware function to handle authentication and routing
+const protectedRoutes = ["/dashboard", "/manager"];
+const authRoutes = ["/login"];
+const publicRoutes = [
+  "/api/auth/login",
+  "/api/auth/refresh",
+  "/api/auth/logout",
+];
 export function middleware(request: NextRequest) {
-  // Get the current URL path from the request
-  const pathname = request.nextUrl.pathname;
-
-  // Retrieve authentication token from cookies, if available
+  const { pathname } = request.nextUrl;
   const token = request.cookies.get("accessToken")?.value;
+  const refreshToken = request.cookies.get("refreshToken")?.value;
 
-  // Determine if the request is for the login page
-  const isAuthPage = pathname.startsWith("/login");
+  // API 요청 처리
+  if (pathname.startsWith("/api/")) {
+    // public API 엔드포인트는 항상 허용
+    if (publicRoutes.some((route) => pathname.startsWith(route))) {
+      return NextResponse.next();
+    }
 
-  // Determine if the request is for a protected route (dashboard or manager pages)
-  const isProtectedRoute =
-    pathname.startsWith("/dashboard") || pathname.startsWith("/manager");
-
-  // If accessing a protected route without a token, redirect to login page
-  if (isProtectedRoute && !token) {
-    const loginUrl = new URL("/login", request.url);
-    return NextResponse.redirect(loginUrl);
+    // 나머지 API 요청들은 인증 필요
+    if (!token) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: {
+            code: "UNAUTHORIZED",
+            message: "Authentication required",
+          },
+        }),
+        {
+          status: 401,
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
+    return NextResponse.next();
   }
 
-  // If accessing the login page with a valid token, redirect to the dashboard
-  if (isAuthPage && token) {
-    const dashboardUrl = new URL("/manager/dashboard", request.url);
-    return NextResponse.redirect(dashboardUrl);
+  if (pathname === "/api/auth/logout") {
+    return NextResponse.next();
   }
 
-  // Proceed with request handling if no conditions match
+  // When accessing protected pages
+  const isProtectedRoute = protectedRoutes.some((route) =>
+    pathname.startsWith(route)
+  );
+
+  if (isProtectedRoute && !token && !refreshToken) {
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
+
+  // When accessing login page
+  const isAuthRoute = authRoutes.some((route) => pathname.startsWith(route));
+  if (isAuthRoute && token && !request.cookies.get("logging_out")) {
+    // return NextResponse.redirect(new URL("/manager/dashboard", request.url));
+  }
+
   return NextResponse.next();
 }
 
-// Export middleware configuration specifying the routes to match
+// Configure paths for middleware
 export const config = {
-  matcher: ["/dashboard/:path*", "/manager/:path*", "/login"],
+  matcher: [
+    // Protected routes
+    "/dashboard/:path*",
+    "/manager/:path*",
+    // Authentication routes
+    "/login",
+    // API routes
+    "/api/:path*",
+  ],
 };

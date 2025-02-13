@@ -15,15 +15,6 @@ export interface Employee {
   updatedAt: string;
 }
 
-export interface EmployeeFilters {
-  search?: string;
-  isResigned?: boolean;
-  page?: number;
-  limit?: number;
-  sortBy?: keyof Employee;
-  sortOrder?: "ASC" | "DESC";
-}
-
 export interface EmployeeListResponse {
   data: Employee[];
   meta: PaginationMeta;

@@ -1,10 +1,18 @@
 import { ApiResponse } from "@/types/api.types";
 import {
   Employee,
-  EmployeeFilters,
   EmployeeListResponse,
 } from "@/types/manager-employeeList.types";
 import { api } from "./client.api";
+
+export interface EmployeeFilters {
+  search?: string;
+  isResigned?: boolean;
+  page?: number;
+  limit?: number;
+  sortBy?: keyof Employee;
+  sortOrder?: "ASC" | "DESC";
+}
 
 export const employeeApi = {
   // Get employee list

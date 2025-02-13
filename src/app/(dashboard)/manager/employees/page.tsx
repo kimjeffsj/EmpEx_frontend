@@ -101,7 +101,7 @@ export default function EmployeesPage() {
       <Card>
         <DataTable<Employee>
           columns={columns}
-          data={data?.data ?? []}
+          data={data?.data?.data ?? []}
           isLoading={isLoading}
           error={error?.message}
           onRowClick={handleRowClick}
