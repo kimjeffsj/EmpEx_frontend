@@ -3,6 +3,11 @@ export enum UserRole {
   EMPLOYEE = "EMPLOYEE",
 }
 
+export interface ProtectedRoute {
+  path: string;
+  roles: UserRole[];
+}
+
 export interface UserResponse {
   id: number;
   email: string;

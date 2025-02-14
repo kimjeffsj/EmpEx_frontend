@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { SidebarNav } from "@/components/dashboard/sidebar-nav";
 import { UserNav } from "@/components/dashboard/user-nav";
 import {
@@ -64,7 +64,15 @@ export default function DashboardLayout({
   const router = useRouter();
   const { user, isLoading, isAuthenticated, initializeAuth } = useAuthStore();
 
+  const [isHydrated, setIsHydrated] = useState(false);
+
   useEffect(() => {
+    setIsHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isHydrated) return;
+
     const checkAuth = async () => {
       try {
         const token = getAuthToken();
@@ -80,10 +88,14 @@ export default function DashboardLayout({
     };
 
     checkAuth();
-  }, [isAuthenticated, initializeAuth, router]);
+  }, [isHydrated, isAuthenticated, initializeAuth, router]);
 
-  if (isLoading) {
+  if (!isHydrated || isLoading) {
     return <LoadingDialog open={true} title="Loading..." />;
+  }
+
+  if (!user) {
+    return <LoadingDialog open={true} title="Checking authentication..." />;
   }
 
   const navItems =
