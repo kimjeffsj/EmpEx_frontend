@@ -3,7 +3,7 @@ export enum UserRole {
   EMPLOYEE = "EMPLOYEE",
 }
 
-export interface User {
+export interface UserResponse {
   id: number;
   email: string;
   firstName: string;
@@ -21,13 +21,28 @@ export interface LoginCredentials {
   password: string;
 }
 
-export interface AuthResponse {
-  accessToken: string;
-  refreshToken: string;
-  user: User;
+export interface UpdateUserDto {
+  firstName?: string;
+  lastName?: string;
+  password?: string;
+  isActive?: boolean;
 }
 
-export interface RefreshTokenResponse {
-  accessToken: string;
+export interface CreateEmployeeAccountDto {
+  employeeId: number;
+  email: string;
+  password: string;
+}
+
+export interface RefreshTokenDto {
   refreshToken: string;
+}
+
+export interface TokenPayload {
+  id: number;
+  email: string;
+  role: UserRole;
+  employeeId?: number;
+  exp?: number;
+  iat?: number;
 }

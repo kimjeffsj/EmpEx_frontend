@@ -27,8 +27,8 @@ const employeeNavItems = [
     icon: <Clock className="h-4 w-4" />,
   },
   {
-    title: "Payslips",
-    href: "/dashboard/payslips",
+    title: "Paystubs",
+    href: "/dashboard/paystubs",
     icon: <DollarSign className="h-4 w-4" />,
   },
 ];
@@ -86,11 +86,8 @@ export default function DashboardLayout({
     return <LoadingDialog open={true} title="Loading..." />;
   }
 
-  if (!user || !isAuthenticated) {
-    return <LoadingDialog open={true} title="Checking authentication..." />;
-  }
-
-  const navItems = user.role === "MANAGER" ? managerNavItems : employeeNavItems;
+  const navItems =
+    user!.role === "MANAGER" ? managerNavItems : employeeNavItems;
 
   return (
     <div className="min-h-screen">

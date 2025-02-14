@@ -1,24 +1,29 @@
-import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { create } from "zustand";
+
 import { authApi } from "@/lib/api/auth.api";
-import { LoginCredentials, User } from "@/types/auth.types";
-import { getAuthToken } from "@/lib/api/client.api";
+import {
+  LoginCredentials,
+  UpdateUserDto,
+  UserResponse,
+} from "@/types/auth.types";
 
 interface AuthState {
-  user: User | null;
+  user: UserResponse | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
+
   initializeAuth: () => Promise<void>;
   login: (credentials: LoginCredentials) => Promise<boolean>;
-  logout: () => void;
-  refreshToken: () => Promise<string>;
+  logout: () => Promise<void>;
+  updateUser: (userId: number, data: UpdateUserDto) => Promise<boolean>;
   clearError: () => void;
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       isAuthenticated: false,
       isLoading: false,
@@ -26,25 +31,24 @@ export const useAuthStore = create<AuthState>()(
 
       initializeAuth: async () => {
         try {
-          set({ isLoading: true });
-
-          // 1. 현재 토큰 체크
-          const token = getAuthToken();
-          if (!token) {
-            set({
-              user: null,
-              isAuthenticated: false,
-              isLoading: false,
-            });
+          // Skip if already authenticated
+          if (get().isAuthenticated && get().user) {
             return;
           }
 
-          // 2. 사용자 정보 가져오기
+          set({ isLoading: true });
           const response = await authApi.getCurrentUser();
-          if (response?.data) {
+
+          if (response?.success && response.data?.user) {
             set({
-              user: response.data,
+              user: response.data.user,
               isAuthenticated: true,
+              isLoading: false,
+            });
+          } else {
+            set({
+              user: null,
+              isAuthenticated: false,
               isLoading: false,
             });
           }
@@ -58,24 +62,27 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      login: async (credentials) => {
+      login: async (credentials: LoginCredentials) => {
         set({ isLoading: true, error: null });
         try {
           const response = await authApi.login(credentials);
-          const { user } = response.data!;
 
-          set({
-            user,
-            isAuthenticated: true,
-            isLoading: false,
-          });
+          if (response.success && response.data?.user) {
+            set({
+              user: response.data.user,
+              isAuthenticated: true,
+              isLoading: false,
+            });
+            return true;
+          }
 
-          return true;
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          throw new Error("Login failed");
         } catch (error: any) {
           set({
-            error: error.response?.data?.error?.message || "Failed to login",
+            error: error.error?.message || "Failed to login",
             isLoading: false,
+            isAuthenticated: false,
+            user: null,
           });
           return false;
         }
@@ -84,25 +91,19 @@ export const useAuthStore = create<AuthState>()(
       logout: async () => {
         try {
           set({ isLoading: true });
+          const response = await authApi.logout();
 
-          document.cookie = "logging_out=true; path=/; max-age=5";
-
-          // Call logout API
-          await authApi.logout();
-
-          // Clear local storage
-          localStorage.removeItem("auth-storage");
-
-          // Reset state
-          set({
-            user: null,
-            isAuthenticated: false,
-            isLoading: false,
-            error: null,
-          });
+          if (response.success) {
+            set({
+              user: null,
+              isAuthenticated: false,
+              isLoading: false,
+              error: null,
+            });
+          }
         } catch (error) {
           console.error("Logout error:", error);
-          // Even if API call fails, clear local state
+        } finally {
           set({
             user: null,
             isAuthenticated: false,
@@ -112,39 +113,28 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      refreshToken: async () => {
+      updateUser: async (userId: number, data: UpdateUserDto) => {
+        const currentUser = get().user;
+        if (!currentUser) return false;
+
         try {
-          const cookies = document.cookie.split(";").reduce((acc, cookie) => {
-            const [key, value] = cookie.trim().split("=");
-            acc[key] = value;
-            return acc;
-          }, {} as Record<string, string>);
+          set({ isLoading: true, error: null });
+          const response = await authApi.updateUser(userId, data);
 
-          const refreshToken = cookies["refreshToken"];
-          if (!refreshToken) throw new Error("No refresh token");
-
-          const response = await authApi.refreshToken(refreshToken);
-          const { accessToken, refreshToken: newRefreshToken } = response.data!;
-
-          document.cookie = `accessToken=${accessToken}; path=/; max-age=900`;
-          document.cookie = `refreshToken=${newRefreshToken}; path=/; max-age=604800`;
-
-          return accessToken;
-        } catch (error) {
-          // Clear cookies and state on refresh token failure
-          document.cookie =
-            "accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-          document.cookie =
-            "refreshToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-
+          if (response.success && response.data?.user) {
+            set({
+              user: response.data.user,
+              isLoading: false,
+            });
+            return true;
+          }
+          return false;
+        } catch (error: any) {
           set({
-            user: null,
-            isAuthenticated: false,
+            error: error.error?.message || "Failed to update user",
             isLoading: false,
           });
-
-          window.location.href = "/login";
-          throw error;
+          return false;
         }
       },
 
@@ -152,6 +142,7 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: "auth-storage",
+      // Only store user and isAuthenticated
       partialize: (state) => ({
         user: state.user,
         isAuthenticated: state.isAuthenticated,

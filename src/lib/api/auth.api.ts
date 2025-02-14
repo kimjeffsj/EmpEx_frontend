@@ -1,47 +1,51 @@
 import { ApiResponse } from "@/types/api.types";
 import {
-  AuthResponse,
+  CreateEmployeeAccountDto,
   LoginCredentials,
-  RefreshTokenResponse,
-  User,
+  UpdateUserDto,
+  UserResponse,
 } from "@/types/auth.types";
 import { api } from "./client.api";
 
 export const authApi = {
-  // Login
   login: async (credentials: LoginCredentials) => {
-    const response = await api.post<ApiResponse<AuthResponse>>(
+    const response = await api.post<ApiResponse<{ user: UserResponse }>>(
       "/auth/login",
       credentials
     );
     return response.data;
   },
 
-  // Refresh Token
-  refreshToken: async (refreshToken: string) => {
-    const response = await api.post<ApiResponse<RefreshTokenResponse>>(
-      "/auth/refresh",
-      {
-        refreshToken,
-      }
-    );
-    return response.data;
-  },
-
-  // Logout
   logout: async () => {
     const response = await api.post<ApiResponse<void>>("/auth/logout");
     return response.data;
   },
 
-  // Get Current User Information
   getCurrentUser: async () => {
     try {
-      const response = await api.get<ApiResponse<User>>("/auth/me");
+      const response = await api.get<ApiResponse<{ user: UserResponse }>>(
+        "/auth/me"
+      );
       return response.data;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
-      console.error("Failed to get current user:", error);
       return null;
     }
+  },
+
+  updateUser: async (userId: number, data: UpdateUserDto) => {
+    const response = await api.put<ApiResponse<{ user: UserResponse }>>(
+      `/auth/users/${userId}`,
+      data
+    );
+    return response.data;
+  },
+
+  createEmployeeAccount: async (data: CreateEmployeeAccountDto) => {
+    const response = await api.post<ApiResponse<{ user: UserResponse }>>(
+      "/auth/employee-accounts",
+      data
+    );
+    return response.data;
   },
 };

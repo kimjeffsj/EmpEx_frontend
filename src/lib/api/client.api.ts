@@ -1,6 +1,6 @@
-import { useAuthStore } from "@/store/auth.store";
 import axios from "axios";
 import { parseCookies } from "../utils/cookie";
+import { ApiResponse } from "@/types/api.types";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
 
@@ -17,37 +17,45 @@ export const api = axios.create({
   withCredentials: true,
 });
 
-// // Request interceptor for adding auth token
-// api.interceptors.request.use((config) => {
-//   const token = getAuthToken();
-
-//   if (token) {
-//     config.headers.Authorization = `Bearer ${token}`;
-//   }
-//   return config;
-// });
-
 // Response interceptor for handling errors
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    // Handle 401 error (unauthorized)
+    // 401 에러(인증 실패)이고 재시도하지 않은 요청인 경우
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
       try {
-        const authStore = useAuthStore.getState();
-        const newAccessToken = await authStore.refreshToken();
+        // 토큰 갱신 시도 (쿠키는 자동으로 전송됨)
+        await api.post<ApiResponse<void>>("/auth/refresh");
 
-        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+        // 원래 요청 재시도
         return api(originalRequest);
       } catch (refreshError) {
+        // 갱신 실패 시 로그인 페이지로 리다이렉트
+        if (typeof window !== "undefined") {
+          window.location.href = "/login";
+        }
         return Promise.reject(refreshError);
       }
     }
 
-    return Promise.reject(error);
+    // 에러 응답 형식 통일
+    if (error.response?.data) {
+      return Promise.reject(error.response.data);
+    }
+
+    // 네트워크 에러 등의 경우 기본 에러 형식으로 변환
+    return Promise.reject({
+      success: false,
+      data: null,
+      error: {
+        code: "NETWORK_ERROR",
+        message: error.message,
+      },
+      timestamp: new Date().toISOString(),
+    });
   }
 );
