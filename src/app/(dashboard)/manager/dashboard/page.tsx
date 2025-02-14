@@ -9,7 +9,7 @@ export default function ManagerDashboard() {
 
   useEffect(() => {
     fetchStats();
-  }, [fetchStats]);
+  }, []);
 
   if (isLoading) {
     return <div>Loading...</div>;

@@ -1,8 +1,8 @@
 export interface EmployeeTimesheet {
   currentPeriod: {
     id: number;
-    startDate: string;
-    endDate: string;
+    startDate: Date;
+    endDate: Date;
     status: "PROCESSING" | "COMPLETED";
     regularHours: number;
     overtimeHours: number;
@@ -19,12 +19,12 @@ export interface EmployeeTimesheet {
 export interface EmployeePayroll {
   lastPaystub: {
     periodId: number;
-    startDate: string;
-    endDate: string;
+    startDate: Date;
+    endDate: Date;
     regularHours: number;
     overtimeHours: number;
     grossPay: number;
-    status: "DRAFT" | "CONFIRMED" | "SENT";
+    status: "DRAFT" | "CONFIRMED" | "SENT" | "COMPLETED";
   };
 }
 

@@ -9,7 +9,7 @@ export const dashboardApi = {
     const response = await api.get<ApiResponse<ManagerDashboardStats>>(
       "/dashboard/manager/stats"
     );
-    return response.data;
+    return response.data.data;
   },
 
   // Employee Dashboard Stats
@@ -17,6 +17,6 @@ export const dashboardApi = {
     const response = await api.get<ApiResponse<EmployeeDashboardStats>>(
       "/dashboard/employee/stats"
     );
-    return response.data;
+    return response.data.data;
   },
 };
