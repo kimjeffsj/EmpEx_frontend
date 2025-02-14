@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { AlertCircle, CheckCircle2, Info, XCircle } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/utils";
 import {
   Toast as ToastType,
   ToastType as ToastTypeEnum,

@@ -10,16 +10,16 @@ export interface PayPeriodStatus {
 }
 
 export interface ManagerDashboardStats {
-  // 직원 현황
+  // Employee Status
   totalEmployees: number;
   newHires: number; // Last 30 days
   resignations: number; // Last 30 days
 
-  // 급여 현황
+  // Payroll Status
   pendingPayroll: number; // Current pay period total
   currentPeriod: PayPeriodStatus;
 
-  // 타임시트 현황
+  // Timesheet Status
   timesheetStats: {
     submitted: number;
     pending: number;
@@ -27,7 +27,7 @@ export interface ManagerDashboardStats {
   };
 }
 
-// 엔드포인트별 요청/응답 타입
+// Request/Response types by endpoint
 export interface PayPeriodFilters {
   startDate?: Date;
   endDate?: Date;

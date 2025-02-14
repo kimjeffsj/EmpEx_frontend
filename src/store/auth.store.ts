@@ -1,122 +1,152 @@
-import { api } from "@/lib/api/client.api";
-import { ApiResponse } from "@/types/api.types";
-import {
-  AuthResponse,
-  LoginCredentials,
-  RefreshTokenResponse,
-  User,
-} from "@/types/auth.types";
+import { persist } from "zustand/middleware";
 import { create } from "zustand";
 
+import { authApi } from "@/lib/api/auth.api";
+import {
+  LoginCredentials,
+  UpdateUserDto,
+  UserResponse,
+} from "@/types/auth.types";
+
 interface AuthState {
-  user: User | null;
+  user: UserResponse | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
+
+  initializeAuth: () => Promise<void>;
   login: (credentials: LoginCredentials) => Promise<boolean>;
   logout: () => Promise<void>;
-  refreshToken: () => Promise<string>;
+  updateUser: (userId: number, data: UpdateUserDto) => Promise<boolean>;
   clearError: () => void;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
-  user: null,
-  isAuthenticated: false,
-  isLoading: false,
-  error: null,
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set, get) => ({
+      user: null,
+      isAuthenticated: false,
+      isLoading: false,
+      error: null,
 
-  login: async (credentials) => {
-    set({ isLoading: true, error: null });
-    try {
-      const response = await api.post<ApiResponse<AuthResponse>>(
-        "/auth/login",
-        credentials
-      );
-      const { accessToken, refreshToken, user } = response.data.data!;
+      initializeAuth: async () => {
+        try {
+          // Skip if already authenticated
+          if (get().isAuthenticated && get().user) {
+            return;
+          }
 
-      document.cookie = `accessToken=${accessToken}; path=/; max-age=900`; // 15분
-      document.cookie = `refreshToken=${refreshToken}; path=/; max-age=604800`; // 7일
+          set({ isLoading: true });
+          const response = await authApi.getCurrentUser();
 
-      set({
-        user,
-        isAuthenticated: true,
-        isLoading: false,
-      });
-
-      // Redirect based on user role
-      return true;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      set({
-        error: error.response?.data?.error?.message || "Failed to login",
-        isLoading: false,
-      });
-      return false;
-    }
-  },
-
-  logout: async () => {
-    set({ isLoading: true });
-    try {
-      const accessToken = localStorage.getItem("accessToken");
-      if (accessToken) {
-        await api.post<ApiResponse<null>>("/auth/logout", null, {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        });
-      }
-    } catch (error) {
-      console.error("Logout error:", error);
-    } finally {
-      document.cookie =
-        "accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-      document.cookie =
-        "refreshToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("refreshToken");
-
-      set({
-        user: null,
-        isAuthenticated: false,
-        isLoading: false,
-      });
-      window.location.href = "/login";
-    }
-  },
-
-  refreshToken: async () => {
-    try {
-      const refreshToken = localStorage.getItem("refreshToken");
-      if (!refreshToken) throw new Error("No refresh token");
-
-      const response = await api.post<ApiResponse<RefreshTokenResponse>>(
-        "/auth/refresh",
-        {
-          refreshToken,
+          if (response?.success && response.data?.user) {
+            set({
+              user: response.data.user,
+              isAuthenticated: true,
+              isLoading: false,
+            });
+          } else {
+            set({
+              user: null,
+              isAuthenticated: false,
+              isLoading: false,
+            });
+          }
+        } catch (error) {
+          console.error("Auth initialization failed:", error);
+          set({
+            user: null,
+            isAuthenticated: false,
+            isLoading: false,
+          });
         }
-      );
+      },
 
-      const { accessToken, refreshToken: newRefreshToken } =
-        response.data.data!;
+      login: async (credentials: LoginCredentials) => {
+        set({ isLoading: true, error: null });
+        try {
+          const response = await authApi.login(credentials);
 
-      localStorage.setItem("accessToken", accessToken);
-      localStorage.setItem("refreshToken", newRefreshToken);
+          if (response.success && response.data?.user) {
+            set({
+              user: response.data.user,
+              isAuthenticated: true,
+              isLoading: false,
+            });
+            return true;
+          }
 
-      return accessToken;
-    } catch (error) {
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("refreshToken");
-      set({
-        user: null,
-        isAuthenticated: false,
-        isLoading: false,
-      });
-      window.location.href = "/login";
-      throw error;
+          throw new Error("Login failed");
+        } catch (error: any) {
+          set({
+            error: error.error?.message || "Failed to login",
+            isLoading: false,
+            isAuthenticated: false,
+            user: null,
+          });
+          return false;
+        }
+      },
+
+      logout: async () => {
+        try {
+          set({ isLoading: true });
+          const response = await authApi.logout();
+
+          if (response.success) {
+            set({
+              user: null,
+              isAuthenticated: false,
+              isLoading: false,
+              error: null,
+            });
+          }
+        } catch (error) {
+          console.error("Logout error:", error);
+        } finally {
+          set({
+            user: null,
+            isAuthenticated: false,
+            isLoading: false,
+            error: null,
+          });
+        }
+      },
+
+      updateUser: async (userId: number, data: UpdateUserDto) => {
+        const currentUser = get().user;
+        if (!currentUser) return false;
+
+        try {
+          set({ isLoading: true, error: null });
+          const response = await authApi.updateUser(userId, data);
+
+          if (response.success && response.data?.user) {
+            set({
+              user: response.data.user,
+              isLoading: false,
+            });
+            return true;
+          }
+          return false;
+        } catch (error: any) {
+          set({
+            error: error.error?.message || "Failed to update user",
+            isLoading: false,
+          });
+          return false;
+        }
+      },
+
+      clearError: () => set({ error: null }),
+    }),
+    {
+      name: "auth-storage",
+      // Only store user and isAuthenticated
+      partialize: (state) => ({
+        user: state.user,
+        isAuthenticated: state.isAuthenticated,
+      }),
     }
-  },
-
-  clearError: () => set({ error: null }),
-}));
+  )
+);

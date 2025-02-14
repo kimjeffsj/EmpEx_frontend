@@ -9,15 +9,15 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/utils";
 import LoadingSpinner from "./loading-spinner";
 
 export interface Column<T> {
   key: keyof T;
   title: string;
   sortable?: boolean;
-  render?: (value: T[keyof T], item: T) => React.ReactNode;
   width?: string;
+  render?: (value: T[keyof T], item: T) => React.ReactNode;
 }
 
 interface DataTableProps<T> {

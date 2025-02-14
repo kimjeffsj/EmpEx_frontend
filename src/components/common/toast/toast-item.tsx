@@ -1,6 +1,6 @@
 import { ToastItemProps } from "@/types/toast.types";
 import { AlertCircle, CheckCircle2, Info, XCircle } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils/utils";
 import { useEffect } from "react";
 
 const toastStyles = {

@@ -1,9 +1,8 @@
 "use client";
 
-import { Suspense } from "react";
+import { useEffect, useState } from "react";
 import { SidebarNav } from "@/components/dashboard/sidebar-nav";
 import { UserNav } from "@/components/dashboard/user-nav";
-
 import {
   LayoutDashboard,
   Clock,
@@ -12,6 +11,9 @@ import {
   FileText,
 } from "lucide-react";
 import { useAuthStore } from "@/store/auth.store";
+import { LoadingDialog } from "@/components/ui/loading-dialog";
+import { useRouter } from "next/navigation";
+import { getAuthToken } from "@/lib/api/client.api";
 
 const employeeNavItems = [
   {
@@ -25,8 +27,8 @@ const employeeNavItems = [
     icon: <Clock className="h-4 w-4" />,
   },
   {
-    title: "Payslips",
-    href: "/dashboard/payslips",
+    title: "Paystubs",
+    href: "/dashboard/paystubs",
     icon: <DollarSign className="h-4 w-4" />,
   },
 ];
@@ -59,9 +61,45 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user } = useAuthStore();
+  const router = useRouter();
+  const { user, isLoading, isAuthenticated, initializeAuth } = useAuthStore();
+
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isHydrated) return;
+
+    const checkAuth = async () => {
+      try {
+        const token = getAuthToken();
+        if (!isAuthenticated && token) {
+          await initializeAuth();
+        } else if (!isAuthenticated && !token) {
+          router.replace("/login");
+        }
+      } catch (error) {
+        console.error("Auth check failed:", error);
+        router.replace("/login");
+      }
+    };
+
+    checkAuth();
+  }, [isHydrated, isAuthenticated, initializeAuth, router]);
+
+  if (!isHydrated || isLoading) {
+    return <LoadingDialog open={true} title="Loading..." />;
+  }
+
+  if (!user) {
+    return <LoadingDialog open={true} title="Checking authentication..." />;
+  }
+
   const navItems =
-    user?.role === "MANAGER" ? managerNavItems : employeeNavItems;
+    user!.role === "MANAGER" ? managerNavItems : employeeNavItems;
 
   return (
     <div className="min-h-screen">
@@ -70,7 +108,7 @@ export default function DashboardLayout({
         <div className="flex h-16 items-center px-4">
           <div className="font-bold text-xl">EmpEx</div>
           <div className="ml-auto flex items-center space-x-4">
-            <UserNav />
+            <UserNav user={user} />
           </div>
         </div>
       </div>
@@ -83,9 +121,7 @@ export default function DashboardLayout({
         </div>
 
         {/* Content */}
-        <div className="flex-1 p-8">
-          <Suspense fallback={<div>Loading...</div>}>{children}</Suspense>
-        </div>
+        <div className="flex-1 p-8">{children}</div>
       </div>
     </div>
   );
