@@ -58,7 +58,7 @@ export function EmployeeDashboardContent() {
           title="Last Paycheck"
           value={
             stats.payroll.lastPaystub
-              ? `$${stats.payroll.lastPaystub.grossPay.toFixed(2)}`
+              ? `$${Number(stats.payroll.lastPaystub.grossPay).toFixed(2)}`
               : "N/A"
           }
           description={
