@@ -29,6 +29,9 @@ export interface EmployeePayroll {
 }
 
 export interface EmployeeDashboardStats {
+  employee: {
+    payRate: number;
+  };
   timesheet: EmployeeTimesheet;
   payroll: EmployeePayroll;
 }
