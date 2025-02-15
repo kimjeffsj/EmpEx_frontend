@@ -23,18 +23,18 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // 401 에러(인증 실패)이고 재시도하지 않은 요청인 경우
+    // If 401 error (authentication failure) and request hasn't been retried
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
       try {
-        // 토큰 갱신 시도 (쿠키는 자동으로 전송됨)
+        // Attempt token refresh (cookies are sent automatically)
         await api.post<ApiResponse<void>>("/auth/refresh");
 
-        // 원래 요청 재시도
+        // Retry original request
         return api(originalRequest);
       } catch (refreshError) {
-        // 갱신 실패 시 로그인 페이지로 리다이렉트
+        // Redirect to login page if refresh fails
         if (typeof window !== "undefined") {
           window.location.href = "/login";
         }
@@ -42,12 +42,12 @@ api.interceptors.response.use(
       }
     }
 
-    // 에러 응답 형식 통일
+    // Standardize error response format
     if (error.response?.data) {
       return Promise.reject(error.response.data);
     }
 
-    // 네트워크 에러 등의 경우 기본 에러 형식으로 변환
+    // Convert to default error format for network errors etc.
     return Promise.reject({
       success: false,
       data: null,

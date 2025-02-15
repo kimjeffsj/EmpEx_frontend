@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
-
+import { useManagerDashboardStore } from "@/store/manager-dashboard.store";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -15,47 +14,13 @@ import {
   Clock,
 } from "lucide-react";
 import { format } from "date-fns";
-import { useManagerDashboardStore } from "@/store/manager-dashboard.store";
 
 export function DashboardContent() {
-  const { stats, isLoading, error, fetchStats } = useManagerDashboardStore();
+  const { stats } = useManagerDashboardStore();
 
-  useEffect(() => {
-    fetchStats();
-    // Refresh every 5 minutes
-    const interval = setInterval(fetchStats, 5 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, [fetchStats]);
-
-  if (isLoading) {
-    return (
-      <div className="h-full flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
+  if (!stats) {
+    return null;
   }
-
-  if (error) {
-    return (
-      <div className="h-full flex items-center justify-center">
-        <Card className="p-6">
-          <div className="flex items-center gap-2 text-destructive">
-            <AlertCircle className="h-5 w-5" />
-            <p>Error: {error}</p>
-          </div>
-          <Button
-            variant="outline"
-            className="mt-4"
-            onClick={() => fetchStats()}
-          >
-            Try Again
-          </Button>
-        </Card>
-      </div>
-    );
-  }
-
-  if (!stats) return null;
 
   return (
     <div className="space-y-8">
@@ -114,48 +79,57 @@ export function DashboardContent() {
                 View All Periods
               </Button>
             </div>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span>
-                  {format(new Date(stats.currentPeriod.startDate), "MMM d")} -{" "}
-                  {format(new Date(stats.currentPeriod.endDate), "MMM d, yyyy")}
-                </span>
-                <span className="text-orange-500 bg-orange-50 px-2 py-1 rounded-full text-sm">
-                  {stats.currentPeriod.status}
-                </span>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">
-                    Timesheets Submitted
-                  </span>
+            {stats.currentPeriod ? (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
                   <span>
-                    {stats.currentPeriod.submittedTimesheets}/
-                    {stats.currentPeriod.totalEmployees}
+                    {format(new Date(stats.currentPeriod.startDate), "MMM d")} -{" "}
+                    {format(
+                      new Date(stats.currentPeriod.endDate),
+                      "MMM d, yyyy"
+                    )}
+                  </span>
+                  <span className="text-orange-500 bg-orange-50 px-2 py-1 rounded-full text-sm">
+                    {stats.currentPeriod.status}
                   </span>
                 </div>
-                <div className="w-full bg-secondary h-2 rounded-full overflow-hidden">
-                  <div
-                    className="bg-primary h-full transition-all"
-                    style={{
-                      width: `${
-                        (stats.currentPeriod.submittedTimesheets /
-                          stats.currentPeriod.totalEmployees) *
-                        100
-                      }%`,
-                    }}
-                  />
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Total Hours</span>
-                  <span>{stats.currentPeriod.totalHours}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Overtime Hours</span>
-                  <span>{stats.currentPeriod.overtimeHours}</span>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">
+                      Timesheets Submitted
+                    </span>
+                    <span>
+                      {stats.currentPeriod.submittedTimesheets}/
+                      {stats.currentPeriod.totalEmployees}
+                    </span>
+                  </div>
+                  <div className="w-full bg-secondary h-2 rounded-full overflow-hidden">
+                    <div
+                      className="bg-primary h-full transition-all"
+                      style={{
+                        width: `${
+                          (stats.currentPeriod.submittedTimesheets /
+                            stats.currentPeriod.totalEmployees) *
+                          100
+                        }%`,
+                      }}
+                    />
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Total Hours</span>
+                    <span>{stats.currentPeriod.totalHours}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">
+                      Overtime Hours
+                    </span>
+                    <span>{stats.currentPeriod.overtimeHours}</span>
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              <p className="text-muted-foreground">No active pay period</p>
+            )}
           </div>
         </Card>
 
@@ -169,21 +143,22 @@ export function DashboardContent() {
               </Button>
             </div>
             <div className="space-y-4">
-              {stats.currentPeriod.totalEmployees -
-                stats.currentPeriod.submittedTimesheets >
-                0 && (
-                <div className="flex gap-4 items-start">
-                  <AlertCircle className="h-5 w-5 text-orange-500 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium">Timesheet Deadline</p>
-                    <p className="text-sm text-muted-foreground">
-                      {stats.currentPeriod.totalEmployees -
-                        stats.currentPeriod.submittedTimesheets}{" "}
-                      employees haven&apos;t submitted timesheets
-                    </p>
+              {stats.currentPeriod &&
+                stats.currentPeriod.totalEmployees -
+                  stats.currentPeriod.submittedTimesheets >
+                  0 && (
+                  <div className="flex gap-4 items-start">
+                    <AlertCircle className="h-5 w-5 text-orange-500 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium">Timesheet Deadline</p>
+                      <p className="text-sm text-muted-foreground">
+                        {stats.currentPeriod.totalEmployees -
+                          stats.currentPeriod.submittedTimesheets}{" "}
+                        employees haven&apos;t submitted timesheets
+                      </p>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
               {stats.newHires > 0 && (
                 <div className="flex gap-4 items-start">
                   <UserPlus className="h-5 w-5 text-blue-500 mt-0.5" />

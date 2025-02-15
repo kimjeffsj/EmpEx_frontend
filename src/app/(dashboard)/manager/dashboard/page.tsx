@@ -9,7 +9,8 @@ export default function ManagerDashboard() {
 
   useEffect(() => {
     fetchStats();
-  }, [fetchStats]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (isLoading) {
     return <div>Loading...</div>;

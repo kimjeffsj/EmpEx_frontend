@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
 import { useEmployeeDashboardStore } from "@/store/employee-dashboard.store";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { Button } from "@/components/ui/button";
@@ -15,42 +14,7 @@ import {
 import { format } from "date-fns";
 
 export function EmployeeDashboardContent() {
-  const { stats, isLoading, error, fetchStats } = useEmployeeDashboardStore();
-
-  useEffect(() => {
-    fetchStats();
-    // Refresh every 5 minutes
-    const interval = setInterval(fetchStats, 5 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, [fetchStats]);
-
-  if (isLoading) {
-    return (
-      <div className="h-full flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="h-full flex items-center justify-center">
-        <Card className="p-6">
-          <div className="flex items-center gap-2 text-destructive">
-            <AlertCircle className="h-5 w-5" />
-            <p>Error: {error}</p>
-          </div>
-          <Button
-            variant="outline"
-            className="mt-4"
-            onClick={() => fetchStats()}
-          >
-            Try Again
-          </Button>
-        </Card>
-      </div>
-    );
-  }
+  const { stats } = useEmployeeDashboardStore();
 
   if (!stats) return null;
 
@@ -94,7 +58,7 @@ export function EmployeeDashboardContent() {
           title="Last Paycheck"
           value={
             stats.payroll.lastPaystub
-              ? `$${stats.payroll.lastPaystub.grossPay.toFixed(2)}`
+              ? `$${Number(stats.payroll.lastPaystub.grossPay).toFixed(2)}`
               : "N/A"
           }
           description={

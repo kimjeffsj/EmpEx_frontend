@@ -10,21 +10,30 @@ interface ManagerDashboardState {
 }
 
 export const useManagerDashboardStore = create<ManagerDashboardState>(
-  (set) => ({
+  (set, get) => ({
     stats: null,
     isLoading: false,
     error: null,
 
     fetchStats: async () => {
+      if (get().isLoading) return;
+
       set({ isLoading: true, error: null });
       try {
-        const response = await dashboardApi.getManagerStats();
+        console.log("Fetching stats..."); // 디버깅용
+
+        const stats = await dashboardApi.getManagerStats();
+
+        console.log("Received stats:", stats); // 디버깅용
+
         set({
-          stats: response.data,
+          stats,
           isLoading: false,
         });
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (error: any) {
+        console.error("Error fetching stats:", error); // 디버깅용
+
         set({
           error:
             error.response?.data?.error?.message ||

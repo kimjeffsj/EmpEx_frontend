@@ -1,5 +1,3 @@
-// src/store/employee-dashboard.store.ts
-
 import { create } from "zustand";
 import { dashboardApi } from "@/lib/api/dashboard.api";
 import { EmployeeDashboardStats } from "@/types/employee-dashboard.types";
@@ -20,9 +18,9 @@ export const useEmployeeDashboardStore = create<EmployeeDashboardState>(
     fetchStats: async () => {
       set({ isLoading: true, error: null });
       try {
-        const response = await dashboardApi.getEmployeeStats();
+        const stats = await dashboardApi.getEmployeeStats();
         set({
-          stats: response.data,
+          stats,
           isLoading: false,
         });
         // eslint-disable-next-line @typescript-eslint/no-explicit-any

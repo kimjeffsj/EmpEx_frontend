@@ -1,4 +1,5 @@
 export interface PayPeriodStatus {
+  id: number;
   startDate: Date;
   endDate: Date;
   periodType: "FIRST_HALF" | "SECOND_HALF";
@@ -17,7 +18,7 @@ export interface ManagerDashboardStats {
 
   // Payroll Status
   pendingPayroll: number; // Current pay period total
-  currentPeriod: PayPeriodStatus;
+  currentPeriod: PayPeriodStatus | null;
 
   // Timesheet Status
   timesheetStats: {
