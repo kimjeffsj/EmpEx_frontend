@@ -2,15 +2,8 @@
 
 import { useEmployeeDashboardStore } from "@/store/employee-dashboard.store";
 import { StatCard } from "@/components/dashboard/stat-card";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import {
-  Clock,
-  DollarSign,
-  CalendarClock,
-  AlertCircle,
-  ArrowRight,
-} from "lucide-react";
+import { Clock, DollarSign, CalendarClock } from "lucide-react";
 import { format } from "date-fns";
 
 export function EmployeeDashboardContent() {
@@ -24,7 +17,7 @@ export function EmployeeDashboardContent() {
       <div>
         <h2 className="text-3xl font-bold tracking-tight">My Dashboard</h2>
         <p className="text-muted-foreground">
-          Welcome back! Here&apos;s an overview of your work status.
+          Overview of your work hours and pay status
         </p>
       </div>
 
@@ -46,9 +39,9 @@ export function EmployeeDashboardContent() {
           icon={<DollarSign className="h-4 w-4 text-muted-foreground" />}
         />
         <StatCard
-          title="Timesheet Status"
+          title="Period Status"
           value={stats.timesheet.currentPeriod.status}
-          description={`Due: ${format(
+          description={`Ends: ${format(
             new Date(stats.timesheet.currentPeriod.endDate),
             "MMM d, yyyy"
           )}`}
@@ -77,12 +70,7 @@ export function EmployeeDashboardContent() {
         {/* Timesheet Overview */}
         <Card className="col-span-4">
           <div className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-semibold">Current Pay Period</h3>
-              <Button variant="outline" size="sm">
-                Submit Timesheet
-              </Button>
-            </div>
+            <h3 className="text-xl font-semibold mb-4">Current Pay Period</h3>
             <div className="space-y-4">
               {/* Period Date Range */}
               <div className="flex items-center justify-between">
@@ -123,7 +111,7 @@ export function EmployeeDashboardContent() {
                   <span>{stats.timesheet.currentPeriod.totalHours}</span>
                 </div>
                 <div className="flex justify-between text-sm font-medium">
-                  <span className="text-muted-foreground">Expected Pay</span>
+                  <span className="text-muted-foreground">Total Pay</span>
                   <span>
                     ${stats.timesheet.currentPeriod.totalPay.toFixed(2)}
                   </span>
@@ -133,49 +121,25 @@ export function EmployeeDashboardContent() {
           </div>
         </Card>
 
-        {/* Alerts & Notifications */}
+        {/* Additional Info */}
         <Card className="col-span-3">
           <div className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-semibold">Notifications</h3>
-              <Button variant="ghost" size="sm">
-                View All <ArrowRight className="h-4 w-4 ml-2" />
-              </Button>
-            </div>
+            <h3 className="text-xl font-semibold mb-4">Pay Information</h3>
             <div className="space-y-4">
-              {stats.timesheet.currentPeriod.status !== "COMPLETED" && (
-                <div className="flex gap-4 items-start">
-                  <AlertCircle className="h-5 w-5 text-orange-500 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium">Timesheet Due Soon</p>
-                    <p className="text-sm text-muted-foreground">
-                      Submit your timesheet by{" "}
-                      {format(
-                        new Date(stats.timesheet.currentPeriod.endDate),
-                        "MMM d"
-                      )}
-                    </p>
-                  </div>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Pay Rate</span>
+                  <span>${stats.employee.payRate}</span>
                 </div>
-              )}
-              {stats.payroll.lastPaystub && (
-                <div className="flex gap-4 items-start">
-                  <DollarSign className="h-5 w-5 text-green-500 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium">
-                      Last Paycheck Processed
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Your paycheck for the period ending{" "}
-                      {format(
-                        new Date(stats.payroll.lastPaystub.endDate),
-                        "MMM d"
-                      )}{" "}
-                      has been processed
-                    </p>
-                  </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Overtime Rate</span>
+                  <span>${(stats.employee.payRate * 1.5).toFixed(2)}</span>
                 </div>
-              )}
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Pay Schedule</span>
+                  <span>Bi-Monthly</span>
+                </div>
+              </div>
             </div>
           </div>
         </Card>
