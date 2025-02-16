@@ -52,7 +52,7 @@ const managerNavItems = [
   },
   {
     title: "Payroll",
-    href: "/manager/payroll",
+    href: "/manager/timesheets",
     icon: <DollarSign className="h-4 w-4" />,
   },
   {
