@@ -3,6 +3,8 @@
 import { useEffect } from "react";
 import { useManagerDashboardStore } from "@/store/manager-dashboard.store";
 import { DashboardContent } from "@/components/dashboard/manager/dsahboard-content";
+import ErrorFallback from "@/components/common/error-fallback";
+import { APIError } from "@/lib/utils/api.utils";
 
 export default function ManagerDashboard() {
   const { stats, isLoading, error, fetchStats } = useManagerDashboardStore();
@@ -17,11 +19,18 @@ export default function ManagerDashboard() {
   }
 
   if (error) {
-    return <div>Error: {error}</div>;
+    return (
+      <ErrorFallback
+        message={
+          error instanceof APIError ? error.message : "Failed to load dashboard"
+        }
+        onRetry={fetchStats}
+      />
+    );
   }
 
   if (!stats) {
-    return null;
+    return <ErrorFallback message="No data available" onRetry={fetchStats} />;
   }
 
   return <DashboardContent />;

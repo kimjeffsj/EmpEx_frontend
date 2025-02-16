@@ -5,6 +5,7 @@ import { StatCard } from "@/components/dashboard/stat-card";
 import { Card } from "@/components/ui/card";
 import { Clock, DollarSign, CalendarClock } from "lucide-react";
 import { format } from "date-fns";
+import { formatDate } from "@/lib/utils/date.utils";
 
 export function EmployeeDashboardContent() {
   const { stats } = useEmployeeDashboardStore();
@@ -25,15 +26,15 @@ export function EmployeeDashboardContent() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Hours This Month"
-          value={`${stats.timesheet.monthlyHours.totalHours}`}
+          value={stats.timesheet.monthlyHours.totalHours.toString()}
           description={`${stats.timesheet.monthlyHours.overtimeHours} hours overtime`}
           icon={<Clock className="h-4 w-4 text-muted-foreground" />}
         />
         <StatCard
           title="Current Pay Period"
-          value={`$${stats.timesheet.currentPeriod.totalPay.toFixed(2)}`}
-          description={format(
-            new Date(stats.timesheet.currentPeriod.startDate),
+          value={`$${stats.timesheet.currentPeriod.totalPay}`}
+          description={formatDate(
+            stats.timesheet.currentPeriod.startDate,
             "MMM d"
           )}
           icon={<DollarSign className="h-4 w-4 text-muted-foreground" />}

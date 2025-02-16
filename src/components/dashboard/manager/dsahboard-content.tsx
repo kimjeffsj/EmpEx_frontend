@@ -42,18 +42,18 @@ export function DashboardContent() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total Employees"
-          value={stats.totalEmployees}
+          value={stats.employees.totalEmployees.toString()}
           icon={<Users className="h-4 w-4 text-muted-foreground" />}
         />
         <StatCard
           title="New Hires"
-          value={stats.newHires}
+          value={stats.employees.newHires}
           description="Last 30 days"
           icon={<UserPlus className="h-4 w-4 text-muted-foreground" />}
         />
         <StatCard
           title="Resignations"
-          value={stats.resignations}
+          value={stats.employees.resignations}
           description="Last 30 days"
           icon={<UserMinus className="h-4 w-4 text-muted-foreground" />}
         />
@@ -62,7 +62,7 @@ export function DashboardContent() {
           value={new Intl.NumberFormat("en-US", {
             style: "currency",
             currency: "USD",
-          }).format(stats.pendingPayroll)}
+          }).format(stats.payroll.pendingPayroll)}
           description="Current pay period"
           icon={<DollarSign className="h-4 w-4 text-muted-foreground" />}
         />
@@ -79,18 +79,22 @@ export function DashboardContent() {
                 View All Periods
               </Button>
             </div>
-            {stats.currentPeriod ? (
+            {stats.payroll.currentPeriod ? (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span>
-                    {format(new Date(stats.currentPeriod.startDate), "MMM d")} -{" "}
                     {format(
-                      new Date(stats.currentPeriod.endDate),
+                      new Date(stats.payroll.currentPeriod.startDate),
+                      "MMM d"
+                    )}{" "}
+                    -{" "}
+                    {format(
+                      new Date(stats.payroll.currentPeriod.endDate),
                       "MMM d, yyyy"
                     )}
                   </span>
                   <span className="text-orange-500 bg-orange-50 px-2 py-1 rounded-full text-sm">
-                    {stats.currentPeriod.status}
+                    {stats.payroll.currentPeriod.status}
                   </span>
                 </div>
                 <div className="space-y-2">
@@ -99,8 +103,8 @@ export function DashboardContent() {
                       Timesheets Submitted
                     </span>
                     <span>
-                      {stats.currentPeriod.submittedTimesheets}/
-                      {stats.currentPeriod.totalEmployees}
+                      {stats.payroll.currentPeriod.submittedTimesheets}/
+                      {stats.payroll.currentPeriod.totalEmployees}
                     </span>
                   </div>
                   <div className="w-full bg-secondary h-2 rounded-full overflow-hidden">
@@ -108,8 +112,8 @@ export function DashboardContent() {
                       className="bg-primary h-full transition-all"
                       style={{
                         width: `${
-                          (stats.currentPeriod.submittedTimesheets /
-                            stats.currentPeriod.totalEmployees) *
+                          (stats.payroll.currentPeriod.submittedTimesheets /
+                            stats.payroll.currentPeriod.totalEmployees) *
                           100
                         }%`,
                       }}
@@ -117,13 +121,13 @@ export function DashboardContent() {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Total Hours</span>
-                    <span>{stats.currentPeriod.totalHours}</span>
+                    <span>{stats.payroll.currentPeriod.totalHours}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">
                       Overtime Hours
                     </span>
-                    <span>{stats.currentPeriod.overtimeHours}</span>
+                    <span>{stats.payroll.currentPeriod.overtimeHours}</span>
                   </div>
                 </div>
               </div>
@@ -143,23 +147,23 @@ export function DashboardContent() {
               </Button>
             </div>
             <div className="space-y-4">
-              {stats.currentPeriod &&
-                stats.currentPeriod.totalEmployees -
-                  stats.currentPeriod.submittedTimesheets >
+              {stats.payroll.currentPeriod &&
+                stats.payroll.currentPeriod.totalEmployees -
+                  stats.payroll.currentPeriod.submittedTimesheets >
                   0 && (
                   <div className="flex gap-4 items-start">
                     <AlertCircle className="h-5 w-5 text-orange-500 mt-0.5" />
                     <div>
                       <p className="text-sm font-medium">Timesheet Deadline</p>
                       <p className="text-sm text-muted-foreground">
-                        {stats.currentPeriod.totalEmployees -
-                          stats.currentPeriod.submittedTimesheets}{" "}
+                        {stats.payroll.currentPeriod.totalEmployees -
+                          stats.payroll.currentPeriod.submittedTimesheets}{" "}
                         employees haven&apos;t submitted timesheets
                       </p>
                     </div>
                   </div>
                 )}
-              {stats.newHires > 0 && (
+              {stats.employees.newHires > 0 && (
                 <div className="flex gap-4 items-start">
                   <UserPlus className="h-5 w-5 text-blue-500 mt-0.5" />
                   <div>
@@ -167,7 +171,8 @@ export function DashboardContent() {
                       New Employee Onboarding
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      {stats.newHires} new employees starting next week
+                      {stats.employees.newHires} new employees starting next
+                      week
                     </p>
                   </div>
                 </div>
