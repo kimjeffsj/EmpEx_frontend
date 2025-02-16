@@ -12,7 +12,7 @@ export interface CreateScheduleDto {
   location?: string;
   isHoliday?: boolean;
   holidayName?: string;
-  payPeriodId: number;
+  payPeriodId?: number;
 }
 
 // DTO for creating multiple Schedules
@@ -23,7 +23,7 @@ export interface CreateBulkScheduleDto {
   location?: string;
   isHoliday?: boolean;
   holidayName?: string;
-  payPeriodId: number;
+  payPeriodId?: number;
 }
 
 // DTO for updating Schedule

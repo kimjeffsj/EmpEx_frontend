@@ -9,6 +9,7 @@ import {
   DollarSign,
   Users,
   FileText,
+  Calendar,
 } from "lucide-react";
 import { useAuthStore } from "@/store/auth.store";
 import { LoadingDialog } from "@/components/ui/loading-dialog";
@@ -43,6 +44,11 @@ const managerNavItems = [
     title: "Employees",
     href: "/manager/employees",
     icon: <Users className="h-4 w-4" />,
+  },
+  {
+    title: "Schedules",
+    href: "/manager/schedules",
+    icon: <Calendar className="h-4 w-4" />,
   },
   {
     title: "Payroll",

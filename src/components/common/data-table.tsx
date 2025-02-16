@@ -9,7 +9,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { cn } from "@/lib/utils/utils";
+import { cn } from "@/lib/utils";
 import LoadingSpinner from "./loading-spinner";
 
 export interface Column<T> {
