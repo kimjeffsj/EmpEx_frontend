@@ -52,8 +52,8 @@ export interface EmployeeListItem {
   lastName: string;
   email: string;
   startDate: ISODateString | null;
-  position?: string;
-  department?: string;
+  // position?: string;
+  // department?: string;
 }
 
 // API 응답 타입

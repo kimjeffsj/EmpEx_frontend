@@ -1,22 +1,76 @@
-import { ManagerDashboardStats } from "@/types/manager-dashboard.types";
-import { api } from "./client.api";
-import { ApiResponse } from "@/types/api.types";
-import { EmployeeDashboardStats } from "@/types/employee-dashboard.types";
+import { apiClient } from "./client.api";
+import {
+  ManagerDashboardResponse,
+  PayPeriodFilters,
+} from "@/types/manager-dashboard.types";
+import {
+  EmployeeDashboardResponse,
+  EmployeeNotificationsResponse,
+} from "@/types/employee-dashboard.types";
+import { createQueryString } from "../utils/api.utils";
+
+const BASE_PATH = "/dashboard";
 
 export const dashboardApi = {
-  // Manager Dashboard Stats
-  getManagerStats: async () => {
-    const response = await api.get<ApiResponse<ManagerDashboardStats>>(
-      "/dashboard/manager/stats"
+  // 매니저 대시보드 통계
+  getManagerStats: async (filters?: PayPeriodFilters) => {
+    const queryString = filters ? createQueryString(filters) : "";
+    return apiClient.get<ManagerDashboardResponse>(
+      `${BASE_PATH}/manager/stats${queryString ? `?${queryString}` : ""}`
     );
-    return response.data.data;
   },
 
-  // Employee Dashboard Stats
+  // 직원 대시보드 통계
   getEmployeeStats: async () => {
-    const response = await api.get<ApiResponse<EmployeeDashboardStats>>(
-      "/dashboard/employee/stats"
+    return apiClient.get<EmployeeDashboardResponse>(
+      `${BASE_PATH}/employee/stats`
     );
-    return response.data.data;
+  },
+
+  // 직원 알림 조회
+  getEmployeeNotifications: async () => {
+    return apiClient.get<EmployeeNotificationsResponse>(
+      `${BASE_PATH}/employee/notifications`
+    );
+  },
+
+  // 알림 읽음 처리
+  markNotificationAsRead: async (notificationId: number) => {
+    return apiClient.put(`${BASE_PATH}/notifications/${notificationId}/read`);
+  },
+
+  // 대시보드 데이터 새로고침
+  refreshDashboardData: async () => {
+    return apiClient.post(`${BASE_PATH}/refresh`);
+  },
+
+  // 대시보드 위젯 설정 저장
+  saveWidgetSettings: async (settings: {
+    layout: Array<{
+      id: string;
+      position: number;
+      visible: boolean;
+    }>;
+  }) => {
+    return apiClient.put(`${BASE_PATH}/widgets/settings`, settings);
+  },
+
+  // 대시보드 위젯 설정 조회
+  getWidgetSettings: async () => {
+    return apiClient.get(`${BASE_PATH}/widgets/settings`);
+  },
+
+  // 실시간 알림 설정
+  updateNotificationSettings: async (settings: {
+    email: boolean;
+    push: boolean;
+    types: string[];
+  }) => {
+    return apiClient.put(`${BASE_PATH}/notification-settings`, settings);
+  },
+
+  // 실시간 알림 설정 조회
+  getNotificationSettings: async () => {
+    return apiClient.get(`${BASE_PATH}/notification-settings`);
   },
 };

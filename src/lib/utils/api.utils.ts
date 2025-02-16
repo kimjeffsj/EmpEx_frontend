@@ -52,8 +52,7 @@ export const normalizePaginationParams = (page?: number, limit?: number) => ({
 });
 
 // URL 쿼리 파라미터 생성
-// any 대신 unknown 으로 타입 에러 우회 했음.
-export const createQueryString = (params: Record<string, unknown>): string => {
+export const createQueryString = (params: Record<string, any>): string => {
   const searchParams = new URLSearchParams();
 
   Object.entries(params).forEach(([key, value]) => {

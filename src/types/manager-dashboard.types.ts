@@ -17,7 +17,7 @@ export interface EmployeeStats {
   totalEmployees: number;
   newHires: number;
   resignations: number;
-  departmentDistribution: Record<string, number>;
+  // departmentDistribution: Record<string, number>;
 }
 
 // 급여 현황 통계

@@ -1,88 +1,96 @@
-import { ApiResponse } from "@/types/api.types";
+import { createQueryString } from "../utils/api.utils";
+import { apiClient } from "./client.api";
+
 import {
-  CreateBulkScheduleDto,
+  Schedule,
+  ScheduleListResponse,
+  SingleScheduleResponse,
+  ScheduleFilters,
   CreateScheduleDto,
+  CreateBulkScheduleDto,
   ReviewRequestDto,
   ReviewResponseDto,
-  Schedule,
-  ScheduleFilters,
-  ScheduleResponse,
-  SingleScheduleResponse,
 } from "@/types/schedule.types";
-import { api } from "./client.api";
+
+const BASE_PATH = "/schedules";
 
 export const scheduleApi = {
+  // 일정 목록 조회
   getSchedules: async (filters: ScheduleFilters) => {
-    const response = await api.get<ApiResponse<ScheduleResponse>>(
-      "/schedules",
-      {
-        params: {
-          page: filters.page,
-          limit: filters.limit,
-          location: filters.location,
-          employeeId: filters.employeeId,
-          startDate: filters.startDate?.toISOString(),
-          endDate: filters.endDate?.toISOString(),
-          status: filters.status,
-        },
-      }
-    );
-    return response.data;
+    const queryString = createQueryString(filters);
+    return apiClient.get<ScheduleListResponse>(`${BASE_PATH}?${queryString}`);
   },
 
+  // 단일 일정 조회
   getSchedule: async (id: number) => {
-    const response = await api.get<ApiResponse<SingleScheduleResponse>>(
-      `/schedules/${id}`
-    );
-    return response.data;
+    return apiClient.get<SingleScheduleResponse>(`${BASE_PATH}/${id}`);
   },
 
+  // 일정 생성
   createSchedule: async (data: CreateScheduleDto) => {
-    const response = await api.post<ApiResponse<Schedule>>("/schedules", data);
-    return response.data;
+    return apiClient.post<Schedule>(BASE_PATH, data);
   },
 
+  // 여러 일정 생성
   createBulkSchedules: async (data: CreateBulkScheduleDto) => {
-    const response = await api.post<ApiResponse<Schedule[]>>(
-      "/schedules/bulk",
-      data
-    );
-    return response.data;
+    return apiClient.post<Schedule[]>(`${BASE_PATH}/bulk`, data);
   },
 
+  // 일정 수정
   updateSchedule: async (id: number, data: Partial<CreateScheduleDto>) => {
-    const response = await api.put<ApiResponse<Schedule>>(
-      `/schedules/${id}`,
-      data
-    );
-    return response.data;
+    return apiClient.put<Schedule>(`${BASE_PATH}/${id}`, data);
   },
 
+  // 일정 삭제
   deleteSchedule: async (id: number) => {
-    const response = await api.delete<ApiResponse<void>>(`/schedules/${id}`);
-    return response.data;
+    return apiClient.delete<void>(`${BASE_PATH}/${id}`);
   },
 
+  // 근무 장소 목록 조회
   getLocations: async () => {
-    const response = await api.get<ApiResponse<string[]>>(
-      "/schedules/locations"
-    );
-    return response.data;
+    return apiClient.get<string[]>(`${BASE_PATH}/locations`);
   },
 
+  // 리뷰 요청
   requestReview: async (id: number, data: ReviewRequestDto) => {
-    const response = await api.post<ApiResponse<Schedule>>(
-      `/schedules/${id}/review`,
-      data
-    );
-    return response.data;
+    return apiClient.post<Schedule>(`${BASE_PATH}/${id}/review`, data);
   },
 
+  // 리뷰 처리
   processReview: async (id: number, data: ReviewResponseDto) => {
-    const response = await api.put<ApiResponse<Schedule>>(
-      `/schedules/${id}/review/process`,
-      data
+    return apiClient.put<Schedule>(`${BASE_PATH}/${id}/review/process`, data);
+  },
+
+  // 주간 일정 조회
+  getWeeklySchedule: async (startDate: string, endDate: string) => {
+    return apiClient.get<ScheduleListResponse>(
+      `${BASE_PATH}/weekly?startDate=${startDate}&endDate=${endDate}`
     );
-    return response.data;
+  },
+
+  // 월간 일정 조회
+  getMonthlySchedule: async (year: number, month: number) => {
+    return apiClient.get<ScheduleListResponse>(
+      `${BASE_PATH}/monthly?year=${year}&month=${month}`
+    );
+  },
+
+  // 직원별 일정 조회
+  getEmployeeSchedules: async (
+    employeeId: number,
+    startDate: string,
+    endDate: string
+  ) => {
+    return apiClient.get<ScheduleListResponse>(
+      `${BASE_PATH}/employee/${employeeId}?startDate=${startDate}&endDate=${endDate}`
+    );
+  },
+
+  // 휴일 일정 관리
+  setHoliday: async (
+    id: number,
+    holidayData: { isHoliday: boolean; holidayName?: string }
+  ) => {
+    return apiClient.put<Schedule>(`${BASE_PATH}/${id}/holiday`, holidayData);
   },
 };

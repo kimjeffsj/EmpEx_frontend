@@ -41,8 +41,8 @@ export interface UpcomingSchedule {
 // 직원 정보
 export interface EmployeeInfo {
   payRate: number;
-  department?: string;
-  position?: string;
+  // department?: string;
+  // position?: string;
   manager?: {
     id: ID;
     name: string;
