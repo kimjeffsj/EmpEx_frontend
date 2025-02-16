@@ -1,34 +1,42 @@
-import { PaginationMeta } from "./api.types";
+import { ApiListResponse, ApiResponse } from "./api.types";
+import { BaseEntity, BaseFilter, ID } from "./common.types";
 
-export interface PayPeriod {
-  id: number;
-  startDate: Date;
-  endDate: Date;
-  status: "PROCESSING" | "COMPLETED";
-  periodType: "FIRST_HALF" | "SECOND_HALF";
+import { ISODateString, Period, TimeRange, WorkHours } from "./date.types";
+
+export enum PayrollStatus {
+  PROCESSING = "PROCESSING",
+  COMPLETED = "COMPLETED",
 }
 
-export interface Employee {
-  id: number;
+export enum TimesheetStatus {
+  PENDING = "PENDING",
+  APPROVED = "APPROVED",
+  REJECTED = "REJECTED",
+}
+
+// 급여 기간
+export interface PayPeriod extends BaseEntity, Period {
+  status: PayrollStatus;
+}
+
+// 직원 기본 정보
+export interface PayrollEmployee {
+  id: ID;
   firstName: string;
   lastName: string;
   email: string;
   payRate: number;
 }
 
-export interface TimesheetEntry {
-  id: number;
-  employeeId: number;
-  employee: Employee;
-  startTime: Date;
-  endTime: Date;
-  regularHours: number;
-  overtimeHours: number;
-  totalHours: number;
+// 근무 시간 기록
+export interface TimesheetEntry extends BaseEntity, TimeRange, WorkHours {
+  employeeId: ID;
+  employee: PayrollEmployee;
+  status: TimesheetStatus;
   totalPay: number;
-  status: "PENDING" | "APPROVED" | "REJECTED";
 }
 
+// 급여 기간 상세
 export interface PayPeriodDetail extends PayPeriod {
   timesheets: TimesheetEntry[];
   stats: {
@@ -39,6 +47,7 @@ export interface PayPeriodDetail extends PayPeriod {
   };
 }
 
+// 급여 요약
 export interface PayrollSummary {
   totalWorkHours: number;
   totalOvertimeHours: number;
@@ -46,31 +55,34 @@ export interface PayrollSummary {
   overtimePay: number;
   workedEmployees: number;
   totalEmployees: number;
-  dueDate: Date | null;
-  status: "PROCESSING" | "COMPLETED";
+  dueDate: ISODateString | null;
+  status: PayrollStatus;
 }
 
-export interface PayrollFilters {
-  periodId?: number;
-  startDate?: Date;
-  endDate?: Date;
-  status?: string;
-  employeeId?: number;
-  page?: number;
-  limit?: number;
+// 필터
+export interface PayrollFilters extends BaseFilter {
+  periodId?: ID;
+  startDate?: ISODateString;
+  endDate?: ISODateString;
+  status?: PayrollStatus;
+  employeeId?: ID;
 }
 
+// 타임시트 업데이트 DTO
 export interface TimesheetUpdateDto {
-  startTime?: Date;
-  endTime?: Date;
-  status?: "APPROVED" | "REJECTED";
+  startTime?: ISODateString;
+  endTime?: ISODateString;
+  status?: TimesheetStatus;
   comment?: string;
 }
 
-export interface PayrollResponse {
-  data: {
-    period: PayPeriodDetail;
-    summary: PayrollSummary;
-  };
-  meta: PaginationMeta;
+// API 응답 데이터 구조
+export interface PayrollData {
+  period: PayPeriodDetail;
+  summary: PayrollSummary;
 }
+
+// API 응답 타입
+export type PayrollResponse = ApiResponse<PayrollData>;
+export type PayPeriodListResponse = ApiListResponse<PayPeriod>;
+export type TimesheetListResponse = ApiListResponse<TimesheetEntry>;

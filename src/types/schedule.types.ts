@@ -1,140 +1,77 @@
+import { ApiListResponse, ApiResponse } from "./api.types";
+import { BaseEntity, BaseFilter, ID } from "./common.types";
+import { ISODateString, TimeRange, WorkHours } from "./date.types";
+
 export enum ScheduleStatus {
   SCHEDULED = "SCHEDULED",
   COMPLETED = "COMPLETED",
-  CANCELLED = "CANCELLED",
+  CANCELED = "CANCELED",
+  REVIEW_REQUESTED = "REVIEW_REQUESTED",
 }
-
-// DTO for creating single Schedule
-export interface CreateScheduleDto {
-  employeeId: number;
-  startTime: Date;
-  endTime: Date;
-  location?: string;
-  isHoliday?: boolean;
-  holidayName?: string;
-  payPeriodId?: number;
-}
-
-// DTO for creating multiple Schedules
-export interface CreateBulkScheduleDto {
-  employeeIds: number[];
-  startTime: Date;
-  endTime: Date;
-  location?: string;
-  isHoliday?: boolean;
-  holidayName?: string;
-  payPeriodId?: number;
-}
-
-// DTO for updating Schedule
-export interface UpdateScheduleDto {
-  startTime?: Date;
-  endTime?: Date;
-  location?: string;
-  isHoliday?: boolean;
-  holidayName?: string;
-  status?: ScheduleStatus;
-  reviewComment?: string;
-}
-
-export interface SingleScheduleResponse {
-  data: Schedule;
-}
-
-export interface ScheduleResponse {
-  data: Schedule[];
-  meta: {
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-  };
-}
-
-// Response type for Schedule
-export interface Schedule {
-  id: number;
-  employeeId: number;
+// 기본 일정 인터페이스
+export interface Schedule extends BaseEntity, TimeRange, WorkHours {
+  employeeId: ID;
   employee: {
     firstName: string;
     lastName: string;
     email: string;
     payRate: number;
   };
-  startTime: Date;
-  endTime: Date;
-  regularHours: number;
-  overtimeHours: number;
-  totalHours: number;
-  totalPay: number;
   status: ScheduleStatus;
   location?: string;
   isHoliday: boolean;
   holidayName?: string;
   reviewComment?: string;
   createdBy?: {
-    id: number;
+    id: ID;
     firstName: string;
     lastName: string;
   };
   lastReviewedBy?: {
-    id: number;
+    id: ID;
     firstName: string;
     lastName: string;
   };
-  createdAt: Date;
-  updatedAt: Date;
 }
 
-// Filter options for Schedule list
-export interface ScheduleFilters {
-  employeeId?: number;
-  startDate?: Date;
-  endDate?: Date;
+// 일정 생성 DTO
+export interface CreateScheduleDto {
+  employeeId: ID;
+  startTime: ISODateString;
+  endTime: ISODateString;
+  location?: string;
+  isHoliday?: boolean;
+  holidayName?: string;
+  payPeriodId?: ID;
+}
+
+// 여러 일정 생성 DTO
+export interface CreateBulkScheduleDto {
+  employeeIds: ID[];
+  startTime: ISODateString;
+  endTime: ISODateString;
+  location?: string;
+  isHoliday?: boolean;
+  holidayName?: string;
+  payPeriodId?: ID;
+}
+
+// 일정 필터
+export interface ScheduleFilters extends BaseFilter {
+  employeeId?: ID;
+  startDate?: ISODateString;
+  endDate?: ISODateString;
   location?: string;
   status?: ScheduleStatus;
-  page?: number;
-  limit?: number;
 }
 
-// Paginated Schedule list response
-export interface PaginatedScheduleResponse {
-  data: ScheduleResponse[];
-  meta: {
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-  };
-}
-export interface ScheduleViewFilters {
-  location?: string;
-  employeeId?: number;
-  startDate?: Date;
-  endDate?: Date;
-  status?: ScheduleStatus;
-}
+// API 응답 타입
+export type ScheduleListResponse = ApiListResponse<Schedule>;
+export type SingleScheduleResponse = ApiResponse<Schedule>;
 
-export interface CalendarEvent {
-  id: number;
-  title: string;
-  start: Date;
-  end: Date;
-  location?: string;
-  status: ScheduleStatus;
-  employee?: {
-    id: number;
-    firstName: string;
-    lastName: string;
-  };
-  reviewReason?: string;
-  reviewComment?: string;
-}
-
-export interface ReviewRequestDto {
+// 리뷰 관련 DTO
+export interface ReviewRequestDto extends TimeRange {
   reviewReason: string;
-  startTime: Date;
-  endTime: Date;
 }
 
 export interface ReviewResponseDto {
@@ -142,22 +79,19 @@ export interface ReviewResponseDto {
   status: ScheduleStatus;
 }
 
-export interface LocationResponse {
-  data: string[];
-}
-
-export interface ScheduleStore {
-  // 상태
-  schedules: Schedule[];
-  isLoading: boolean;
-  error: string | null;
-  locations: string[];
-  filters: ScheduleViewFilters;
-
-  // 액션
-  fetchSchedules: () => Promise<void>;
-  fetchLocations: () => Promise<void>;
-  setFilter: (filter: Partial<ScheduleViewFilters>) => void;
-  requestReview: (id: number, data: ReviewRequestDto) => Promise<void>;
-  processReview: (id: number, data: ReviewResponseDto) => Promise<void>;
+// 캘린더 뷰를 위한 이벤트 타입
+export interface ScheduleEvent {
+  id: ID;
+  title: string;
+  start: ISODateString;
+  end: ISODateString;
+  status: ScheduleStatus;
+  location?: string;
+  employee: {
+    id: ID;
+    firstName: string;
+    lastName: string;
+  };
+  isHoliday: boolean;
+  holidayName?: string;
 }
