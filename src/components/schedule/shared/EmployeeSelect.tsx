@@ -18,17 +18,17 @@ import {
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 
-interface Employee {
+export interface EmployeeSelection {
   id: number;
   firstName: string;
   lastName: string;
   email: string;
 }
 
-interface EmployeeSelectProps {
-  employees: Employee[];
-  selectedEmployees: Employee[];
-  onSelect: (employee: Employee) => void;
+export interface EmployeeSelectProps {
+  employees: EmployeeSelection[];
+  selectedEmployees: EmployeeSelection[];
+  onSelect: (employee: EmployeeSelection) => void;
   onRemove: (employeeId: number) => void;
   className?: string;
 }

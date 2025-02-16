@@ -7,79 +7,128 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { EmployeeSelect } from "@/components/schedule/shared/EmployeeSelect";
+import {
+  EmployeeSelect,
+  EmployeeSelection,
+} from "@/components/schedule/shared/EmployeeSelect";
 import { TimeRangePicker } from "@/components/schedule/shared/TimeRangePicker";
 import { LocationSelect } from "@/components/schedule/shared/LocationSelect";
-import { useScheduleStore } from "@/store/schedule.store";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/useToast";
+import { CreateBulkScheduleDto } from "@/types/schedule.types";
+import { z } from "zod";
 
-interface Employee {
-  id: number;
-  firstName: string;
-  lastName: string;
-  email: string;
-}
+const scheduleSchema = z.object({
+  employeeIds: z
+    .array(z.number())
+    .min(1, "At least one employee must be selected"),
+  startTime: z.date(),
+  endTime: z.date(),
+  location: z.string().optional(),
+  notes: z.string().optional(),
+});
 
 interface CreateScheduleModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSubmit: (data: CreateBulkScheduleDto) => void;
+  employees: EmployeeSelection[];
   locations: string[];
-  employees: Employee[];
 }
+
+interface FormState {
+  selectedEmployees: EmployeeSelection[];
+  startDate: Date;
+  endDate: Date;
+  location: string;
+}
+
+const initialFormState: FormState = {
+  selectedEmployees: [],
+  startDate: new Date(),
+  endDate: new Date(),
+  location: "",
+};
 
 export function CreateScheduleModal({
   isOpen,
   onClose,
-  locations,
+  onSubmit,
   employees,
+  locations,
 }: CreateScheduleModalProps) {
-  const [selectedEmployees, setSelectedEmployees] = useState<Employee[]>([]);
-  const [startDate, setStartDate] = useState<Date>(new Date());
-  const [endDate, setEndDate] = useState<Date>(new Date());
-  const [location, setLocation] = useState("");
-  const [notes, setNotes] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [formState, setFormState] = useState<FormState>(initialFormState);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
 
-  const { createBulkSchedules } = useScheduleStore();
-  const toastHandler = useToast();
+  const handleEmployeeChange = (employees: EmployeeSelection[]) => {
+    setFormState((prev) => ({ ...prev, selectedEmployees: employees }));
+    setValidationError(null);
+  };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (selectedEmployees.length === 0) {
-      toastHandler.error("Error", "Please select at least one employee");
-      return;
-    }
+  const handleTimeChange = (type: "start" | "end", date: Date) => {
+    setFormState((prev) => ({
+      ...prev,
+      [type === "start" ? "startDate" : "endDate"]: date,
+    }));
+    setValidationError(null);
+  };
 
-    if (startDate >= endDate) {
-      toastHandler.error("Error", "End time must be after start time");
-      return;
-    }
+  const handleLocationChange = (location: string) => {
+    setFormState((prev) => ({ ...prev, location }));
+  };
 
+  const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setFormState((prev) => ({ ...prev, notes: e.target.value }));
+  };
+
+  const validateForm = (): boolean => {
     try {
-      setIsLoading(true);
-      await createBulkSchedules({
+      const { selectedEmployees, startDate, endDate } = formState;
+
+      scheduleSchema.parse({
         employeeIds: selectedEmployees.map((emp) => emp.id),
         startTime: startDate,
         endTime: endDate,
-        location,
+        location: formState.location,
       });
 
-      toastHandler.success("Success", "Schedule created successfully");
-      handleClose();
+      if (startDate >= endDate) {
+        throw new Error("End time must be after start time");
+      }
+
+      return true;
     } catch (error) {
-      toastHandler.error("Error", "Failed to create schedule");
+      if (error instanceof z.ZodError) {
+        setValidationError(error.errors[0].message);
+      } else if (error instanceof Error) {
+        setValidationError(error.message);
+      }
+      return false;
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!validateForm()) return;
+
+    setIsSubmitting(true);
+    try {
+      await onSubmit({
+        employeeIds: formState.selectedEmployees.map((emp) => emp.id),
+        startTime: formState.startDate,
+        endTime: formState.endDate,
+        location: formState.location || undefined,
+      });
+      handleClose();
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
   const handleClose = () => {
-    setSelectedEmployees([]);
-    setStartDate(new Date());
-    setEndDate(new Date());
-    setLocation("");
-    setNotes("");
+    setFormState(initialFormState);
+    setValidationError(null);
     onClose();
   };
 
@@ -92,50 +141,54 @@ export function CreateScheduleModal({
           </DialogHeader>
 
           <div className="grid gap-6 py-4">
-            {/* Employee Selection */}
+            {validationError && (
+              <div className="text-sm text-destructive">{validationError}</div>
+            )}
+
             <div className="space-y-2">
               <Label>Employees</Label>
               <EmployeeSelect
                 employees={employees}
-                selectedEmployees={selectedEmployees}
+                selectedEmployees={formState.selectedEmployees}
                 onSelect={(employee) =>
-                  setSelectedEmployees([...selectedEmployees, employee])
+                  handleEmployeeChange([
+                    ...formState.selectedEmployees,
+                    employee,
+                  ])
                 }
                 onRemove={(employeeId) =>
-                  setSelectedEmployees(
-                    selectedEmployees.filter((emp) => emp.id !== employeeId)
+                  handleEmployeeChange(
+                    formState.selectedEmployees.filter(
+                      (emp) => emp.id !== employeeId
+                    )
                   )
                 }
               />
             </div>
 
-            {/* Time Range Selection */}
             <div className="space-y-2">
               <Label>Schedule Time</Label>
               <TimeRangePicker
-                startDate={startDate}
-                endDate={endDate}
-                onStartDateChange={setStartDate}
-                onEndDateChange={setEndDate}
+                startDate={formState.startDate}
+                endDate={formState.endDate}
+                onStartDateChange={(date) => handleTimeChange("start", date)}
+                onEndDateChange={(date) => handleTimeChange("end", date)}
               />
             </div>
 
-            {/* Location Selection */}
             <div className="space-y-2">
               <Label>Location</Label>
               <LocationSelect
                 locations={locations}
-                value={location}
-                onChange={setLocation}
+                value={formState.location}
+                onChange={handleLocationChange}
               />
             </div>
 
-            {/* Notes */}
             <div className="space-y-2">
               <Label>Notes</Label>
               <textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
+                onChange={handleNotesChange}
                 className="min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 placeholder="Add any additional notes..."
               />
@@ -147,12 +200,12 @@ export function CreateScheduleModal({
               type="button"
               variant="outline"
               onClick={handleClose}
-              disabled={isLoading}
+              disabled={isSubmitting}
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? "Creating..." : "Create Schedule"}
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Creating..." : "Create Schedule"}
             </Button>
           </DialogFooter>
         </form>

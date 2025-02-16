@@ -1,7 +1,6 @@
-// src/app/(dashboard)/manager/schedules/page.tsx
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval } from "date-fns";
 import {
   Calendar,
@@ -14,75 +13,23 @@ import {
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CreateScheduleModal } from "@/components/schedule/modals/CreateScheduleModal";
-import { useScheduleStore } from "@/store/schedule.store";
+
 import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/useToast";
-import { Employee } from "@/types/manager-employeeList.types";
-import { employeeApi } from "@/lib/api/employee.api";
-import { scheduleApi } from "@/lib/api/schedule.api";
+import { CreateBulkScheduleDto } from "@/types/schedule.types";
+import { useSchedules } from "@/hooks/useSchedules";
+import LoadingSpinner from "@/components/common/loading-spinner";
 
 export default function SchedulesPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [locations, setLocations] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
 
-  const { fetchSchedules, schedules } = useScheduleStore();
-  const toast = useToast();
+  const { schedules, employees, locations, isLoading, createSchedule } =
+    useSchedules(currentDate);
 
-  // 직원 목록 불러오기
-  useEffect(() => {
-    const loadEmployees = async () => {
-      try {
-        const response = await employeeApi.getEmployees({
-          page: 1,
-          limit: 100, // 충분히 큰 수로 설정
-          isResigned: false, // 퇴사하지 않은 직원만
-        });
-        if (!response.data) {
-          return new Error("Fetching Employees failed");
-        }
-        setEmployees(response.data.data);
-      } catch (error) {
-        toast.error("Error", "Failed to load employees");
-      }
-    };
-
-    loadEmployees();
-  }, [toast]);
-
-  // 위치 목록 불러오기
-  useEffect(() => {
-    const loadLocations = async () => {
-      try {
-        const response = await scheduleApi.getLocations();
-        if (response.data) {
-          setLocations(response.data);
-        }
-      } catch (error) {
-        toast.error("Error", "Failed to load Locations");
-      }
-    };
-
-    loadLocations();
-  }, [toast]);
-
-  // 현재 월의 스케줄 불러오기
-  useEffect(() => {
-    const loadSchedules = async () => {
-      setIsLoading(true);
-      try {
-        await fetchSchedules();
-      } catch (error) {
-        toast.error("Failed to load schedules");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadSchedules();
-  }, [currentDate, toast]);
+  const handleCreateSchedule = async (data: CreateBulkScheduleDto) => {
+    createSchedule(data);
+    setIsCreateModalOpen(false);
+  };
 
   // 달력에 표시할 날짜들 계산
   const daysInMonth = eachDayOfInterval({
@@ -98,6 +45,10 @@ export default function SchedulesPage() {
   const handleNextMonth = () => {
     setCurrentDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1));
   };
+
+  if (isLoading) {
+    return <LoadingSpinner />;
+  }
 
   return (
     <div className="space-y-6 p-6">
@@ -230,6 +181,7 @@ export default function SchedulesPage() {
       <CreateScheduleModal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
+        onSubmit={handleCreateSchedule}
         employees={employees}
         locations={locations}
       />
