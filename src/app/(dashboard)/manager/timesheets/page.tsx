@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { FileDown, Plus } from "lucide-react";
 import PayPeriodSelector from "@/components/timesheet/PayPeriodSelector";
+import TimesheetTable from "@/components/timesheet/TimesheetTable";
 
 export default function ManagerTimesheetsPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -84,9 +85,14 @@ export default function ManagerTimesheetsPage() {
 
       {/* Content will be added */}
       <Card className="p-6">
-        <div className="text-center text-muted-foreground">
-          Employee timesheet table will be displayed here.
-        </div>
+        <TimesheetTable
+          employees={[]} // TODO: Add employee data
+          periodStart={new Date()}
+          periodEnd={new Date()}
+          onEditTime={(employeeId) => {
+            console.log("Edit time for employee:", employeeId);
+          }}
+        />
       </Card>
     </div>
   );
