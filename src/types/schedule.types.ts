@@ -59,6 +59,7 @@ export interface Schedule {
     firstName: string;
     lastName: string;
     email: string;
+    payRate: number;
   };
   startTime: Date;
   endTime: Date;
