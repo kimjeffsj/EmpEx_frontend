@@ -40,7 +40,7 @@ export interface UpdateEmployeeDto {
 // 직원 필터
 export interface EmployeeFilters extends BaseFilter {
   isResigned?: boolean;
-  department?: string;
+  // department?: string;
   hireStartDate?: ISODateString;
   hireEndDate?: ISODateString;
 }

@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useManagerDashboardStore } from "@/store/manager-dashboard.store";
-import { DashboardContent } from "@/components/dashboard/manager/dsahboard-content";
+import { DashboardContent } from "@/components/dashboard/manager/dashboard-content";
 import ErrorFallback from "@/components/common/error-fallback";
 import { APIError } from "@/lib/utils/api.utils";
 

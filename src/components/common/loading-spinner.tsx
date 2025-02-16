@@ -2,18 +2,8 @@ import { cn } from "@/lib/utils";
 import { Loader2 } from "lucide-react";
 
 interface LoadingSpinnerProps {
-  /**
-   * Size variant of the spinner
-   * @default "default"
-   */
   size?: "sm" | "default" | "lg";
-  /**
-   * Optional text to display below the spinner
-   */
   text?: string;
-  /**
-   * Optional className for container
-   */
   className?: string;
 }
 
