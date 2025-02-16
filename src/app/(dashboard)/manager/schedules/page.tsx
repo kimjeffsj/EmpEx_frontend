@@ -13,23 +13,34 @@ import {
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CreateScheduleModal } from "@/components/schedule/modals/CreateScheduleModal";
-
 import { Badge } from "@/components/ui/badge";
-import { CreateBulkScheduleDto } from "@/types/schedule.types";
 import { useSchedules } from "@/hooks/useSchedules";
 import LoadingSpinner from "@/components/common/loading-spinner";
+import ErrorFallback from "@/components/common/error-fallback";
 
 export default function SchedulesPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-  const { schedules, employees, locations, isLoading, createSchedule } =
+  const { schedules, employees, locations, isLoading, error, createSchedule } =
     useSchedules(currentDate);
 
-  const handleCreateSchedule = async (data: CreateBulkScheduleDto) => {
-    createSchedule(data);
-    setIsCreateModalOpen(false);
-  };
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <LoadingSpinner text="Loading schedules..." />
+      </div>
+    );
+  }
+
+  if (error) {
+    return <ErrorFallback message={error} />;
+  }
+
+  // const handleCreateSchedule = async (data: CreateBulkScheduleDto) => {
+  //   createSchedule(data);
+  //   setIsCreateModalOpen(false);
+  // };
 
   // 달력에 표시할 날짜들 계산
   const daysInMonth = eachDayOfInterval({
@@ -45,10 +56,6 @@ export default function SchedulesPage() {
   const handleNextMonth = () => {
     setCurrentDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1));
   };
-
-  if (isLoading) {
-    return <LoadingSpinner />;
-  }
 
   return (
     <div className="space-y-6 p-6">
@@ -181,7 +188,7 @@ export default function SchedulesPage() {
       <CreateScheduleModal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
-        onSubmit={handleCreateSchedule}
+        onSubmit={createSchedule}
         employees={employees}
         locations={locations}
       />

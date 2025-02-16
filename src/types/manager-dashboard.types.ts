@@ -54,8 +54,6 @@ export interface ManagerDashboardStats {
   employees: EmployeeStats;
   payroll: PayrollStats;
   timesheets: TimesheetStats;
-  tasks: DashboardTask[];
-  lastUpdated: ISODateString;
 }
 
 // 필터

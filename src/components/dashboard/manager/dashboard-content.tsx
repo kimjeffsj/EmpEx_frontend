@@ -18,7 +18,7 @@ import { format } from "date-fns";
 export function DashboardContent() {
   const { stats } = useManagerDashboardStore();
 
-  if (!stats) {
+  if (!stats || !stats.employees || !stats.payroll) {
     return null;
   }
 
@@ -42,7 +42,7 @@ export function DashboardContent() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total Employees"
-          value={stats.employees.totalEmployees.toString()}
+          value={stats.employees.totalEmployees || 0}
           icon={<Users className="h-4 w-4 text-muted-foreground" />}
         />
         <StatCard

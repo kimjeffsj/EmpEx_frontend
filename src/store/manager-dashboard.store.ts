@@ -22,7 +22,14 @@ export const useManagerDashboardStore = create<ManagerDashboardState>(
       try {
         console.log("Fetching stats..."); // 디버깅용
 
-        const stats = await dashboardApi.getManagerStats();
+        const response = await dashboardApi.getManagerStats();
+
+        // 백엔드 응답을 프론트엔드로 변환
+        const formattedResponse: ManagerDashboardStats = {
+          employee: {
+            totalEmployees: 
+          }
+        }
 
         console.log("Received stats:", stats); // 디버깅용
 
