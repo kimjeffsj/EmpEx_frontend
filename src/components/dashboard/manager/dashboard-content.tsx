@@ -18,7 +18,7 @@ import { format } from "date-fns";
 export function DashboardContent() {
   const { stats } = useManagerDashboardStore();
 
-  if (!stats || !stats.employees || !stats.payroll) {
+  if (!stats) {
     return null;
   }
 
@@ -42,18 +42,18 @@ export function DashboardContent() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total Employees"
-          value={stats.employees.totalEmployees || 0}
+          value={stats.data.totalEmployees}
           icon={<Users className="h-4 w-4 text-muted-foreground" />}
         />
         <StatCard
           title="New Hires"
-          value={stats.employees.newHires}
+          value={stats.data.newHires}
           description="Last 30 days"
           icon={<UserPlus className="h-4 w-4 text-muted-foreground" />}
         />
         <StatCard
           title="Resignations"
-          value={stats.employees.resignations}
+          value={stats.data.resignations}
           description="Last 30 days"
           icon={<UserMinus className="h-4 w-4 text-muted-foreground" />}
         />
@@ -62,7 +62,7 @@ export function DashboardContent() {
           value={new Intl.NumberFormat("en-US", {
             style: "currency",
             currency: "USD",
-          }).format(stats.payroll.pendingPayroll)}
+          }).format(stats.data.pendingPayroll)}
           description="Current pay period"
           icon={<DollarSign className="h-4 w-4 text-muted-foreground" />}
         />
@@ -79,22 +79,22 @@ export function DashboardContent() {
                 View All Periods
               </Button>
             </div>
-            {stats.payroll.currentPeriod ? (
+            {stats.data.currentPeriod ? (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span>
                     {format(
-                      new Date(stats.payroll.currentPeriod.startDate),
+                      new Date(stats.data.currentPeriod.startDate),
                       "MMM d"
                     )}{" "}
                     -{" "}
                     {format(
-                      new Date(stats.payroll.currentPeriod.endDate),
+                      new Date(stats.data.currentPeriod.endDate),
                       "MMM d, yyyy"
                     )}
                   </span>
                   <span className="text-orange-500 bg-orange-50 px-2 py-1 rounded-full text-sm">
-                    {stats.payroll.currentPeriod.status}
+                    {stats.data.currentPeriod.status}
                   </span>
                 </div>
                 <div className="space-y-2">
@@ -103,8 +103,8 @@ export function DashboardContent() {
                       Timesheets Submitted
                     </span>
                     <span>
-                      {stats.payroll.currentPeriod.submittedTimesheets}/
-                      {stats.payroll.currentPeriod.totalEmployees}
+                      {stats.data.currentPeriod.submittedTimesheets}/
+                      {stats.data.currentPeriod.totalEmployees}
                     </span>
                   </div>
                   <div className="w-full bg-secondary h-2 rounded-full overflow-hidden">
@@ -112,8 +112,8 @@ export function DashboardContent() {
                       className="bg-primary h-full transition-all"
                       style={{
                         width: `${
-                          (stats.payroll.currentPeriod.submittedTimesheets /
-                            stats.payroll.currentPeriod.totalEmployees) *
+                          (stats.data.currentPeriod.submittedTimesheets /
+                            stats.data.currentPeriod.totalEmployees) *
                           100
                         }%`,
                       }}
@@ -121,13 +121,13 @@ export function DashboardContent() {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Total Hours</span>
-                    <span>{stats.payroll.currentPeriod.totalHours}</span>
+                    <span>{stats.data.currentPeriod.totalHours}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">
                       Overtime Hours
                     </span>
-                    <span>{stats.payroll.currentPeriod.overtimeHours}</span>
+                    <span>{stats.data.currentPeriod.overtimeHours}</span>
                   </div>
                 </div>
               </div>
@@ -147,23 +147,23 @@ export function DashboardContent() {
               </Button>
             </div>
             <div className="space-y-4">
-              {stats.payroll.currentPeriod &&
-                stats.payroll.currentPeriod.totalEmployees -
-                  stats.payroll.currentPeriod.submittedTimesheets >
+              {stats.data.currentPeriod &&
+                stats.data.currentPeriod.totalEmployees -
+                  stats.data.currentPeriod.submittedTimesheets >
                   0 && (
                   <div className="flex gap-4 items-start">
                     <AlertCircle className="h-5 w-5 text-orange-500 mt-0.5" />
                     <div>
                       <p className="text-sm font-medium">Timesheet Deadline</p>
                       <p className="text-sm text-muted-foreground">
-                        {stats.payroll.currentPeriod.totalEmployees -
-                          stats.payroll.currentPeriod.submittedTimesheets}{" "}
+                        {stats.data.currentPeriod.totalEmployees -
+                          stats.data.currentPeriod.submittedTimesheets}{" "}
                         employees haven&apos;t submitted timesheets
                       </p>
                     </div>
                   </div>
                 )}
-              {stats.employees.newHires > 0 && (
+              {stats.data.newHires > 0 && (
                 <div className="flex gap-4 items-start">
                   <UserPlus className="h-5 w-5 text-blue-500 mt-0.5" />
                   <div>
@@ -171,8 +171,7 @@ export function DashboardContent() {
                       New Employee Onboarding
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      {stats.employees.newHires} new employees starting next
-                      week
+                      {stats.data.newHires} new employees starting next week
                     </p>
                   </div>
                 </div>

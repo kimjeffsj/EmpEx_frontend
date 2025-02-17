@@ -1,24 +1,17 @@
-import {
-  PayPeriodListResponse,
-  PayrollFilters,
-  PayrollResponse,
-  TimesheetEntry,
-  TimesheetListResponse,
-  TimesheetUpdateDto,
-} from "@/types/\bpayroll.types";
 import { apiClient } from "./client.api";
 import { createQueryString } from "../utils/api.utils";
+import { BaseFilter } from "@/types/common/base.types";
+import { PayPeriod } from "@/types/features/payroll.types";
 
 const BASE_PATH = "/payrolls";
 
 export const payrollApi = {
   // 급여 기간 목록 조회
-  getPayPeriods: async (filters?: PayrollFilters) => {
+  getPayPeriods: async (filters?: BaseFilter) => {
     const queryString = filters ? createQueryString(filters) : "";
-    const response = await apiClient.get<PayPeriodListResponse>(
+    return apiClient.get<PayPeriod>(
       `${BASE_PATH}/periods${queryString ? `?${queryString}` : ""}`
     );
-    return response.data.data;
   },
 
   // 급여 기간 상세 조회

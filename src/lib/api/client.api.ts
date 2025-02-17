@@ -1,11 +1,12 @@
 import axios, { AxiosError, AxiosInstance, AxiosRequestConfig } from "axios";
 import { parseCookies } from "../utils/cookie";
-import { ApiResponse } from "@/types/api.types";
+
 import {
   APIError,
   createErrorMessage,
   handleApiError,
 } from "../utils/api.utils";
+import { ApiResponse } from "@/types/common/api.types";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000/api";
 
@@ -63,7 +64,7 @@ const createAPIClient = (): AxiosInstance => {
 
       // API 에러 응답 처리
       if (error.response?.data) {
-        return Promise.reject(new APIError(error.response.data.error));
+        return Promise.reject(new APIError(error.response.error));
       }
 
       // 네트워크 에러 등 기타 에러 처리

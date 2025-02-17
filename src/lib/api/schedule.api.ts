@@ -1,26 +1,16 @@
+import { BaseFilter } from "@/types/common/base.types";
 import { createQueryString } from "../utils/api.utils";
 import { apiClient } from "./client.api";
-
-import {
-  Schedule,
-  ScheduleListResponse,
-  SingleScheduleResponse,
-  ScheduleFilters,
-  CreateScheduleDto,
-  CreateBulkScheduleDto,
-  ReviewRequestDto,
-  ReviewResponseDto,
-  WeeklyScheduleParams,
-  MonthlyScheduleParams,
-} from "@/types/schedule.types";
+import { Schedule } from "@/types/features/schedule.types";
+import { ApiResponse } from "@/types/common/api.types";
 
 const BASE_PATH = "/schedules";
 
 export const scheduleApi = {
   // 일정 목록 조회
-  getSchedules: async (filters: ScheduleFilters) => {
+  getSchedules: async (filters: BaseFilter) => {
     const queryString = createQueryString(filters);
-    const response = await apiClient.get<ScheduleListResponse>(
+    const response = await apiClient.get<ApiResponse<Schedule[]>>(
       `${BASE_PATH}?${queryString}`
     );
     return response.data.data;
