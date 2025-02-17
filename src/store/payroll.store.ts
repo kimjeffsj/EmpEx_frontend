@@ -1,11 +1,13 @@
 import { create } from "zustand";
 import { payrollApi } from "@/lib/api/payroll.api";
+
+import { APIError } from "@/lib/utils/api.utils";
 import {
   PayPeriod,
   PayPeriodDetail,
   PayrollSummary,
   TimesheetUpdateDto,
-} from "@/types/payroll.types";
+} from "@/types/\bpayroll.types";
 
 interface PayrollState {
   // State
@@ -40,17 +42,18 @@ export const usePayrollStore = create<PayrollState>((set, get) => ({
     try {
       set({ isLoading: true, error: null });
       const response = await payrollApi.getPayPeriods();
-      // if (response.success) {
-      //   set({ periods: response.data || [] });
-      // }
-
       set({
-        periods: response.success ? response.data || [] : [],
+        periods: response.data.data,
+        isLoading: false,
       });
-    } catch (error: any) {
-      set({ error: error.message || "Failed to fetch pay periods" });
-    } finally {
-      set({ isLoading: false });
+    } catch (error) {
+      set({
+        error:
+          error instanceof APIError
+            ? error.message
+            : "Failed to fetch pay periods",
+        isLoading: false,
+      });
     }
   },
 
@@ -58,16 +61,19 @@ export const usePayrollStore = create<PayrollState>((set, get) => ({
     try {
       set({ isLoading: true, error: null });
       const response = await payrollApi.getPayPeriodDetail(periodId);
-      if (response.success && response.data) {
-        set({
-          currentPeriod: response.data.data.period,
-          summary: response.data.data.summary,
-        });
-      }
-    } catch (error: any) {
-      set({ error: error.message || "Failed to fetch period detail" });
-    } finally {
-      set({ isLoading: false });
+      set({
+        currentPeriod: response.data.data.period,
+        summary: response.data.data.summary,
+        isLoading: false,
+      });
+    } catch (error) {
+      set({
+        error:
+          error instanceof APIError
+            ? error.message
+            : "Failed to fetch period detail",
+        isLoading: false,
+      });
     }
   },
 
@@ -76,22 +82,21 @@ export const usePayrollStore = create<PayrollState>((set, get) => ({
 
     try {
       set({ isLoading: true, error: null });
-      const response = await payrollApi.updateTimesheet(timesheetId, data);
+      await payrollApi.updateTimesheet(timesheetId, data);
 
-      if (response.success && currentPeriod?.id) {
-        // Refresh current period data
+      if (currentPeriod?.id) {
         await get().fetchPeriodDetail(currentPeriod.id);
-      } else if (response.success) {
-        // If we don't have a current period, refresh the periods list
+      } else {
         await get().fetchPayPeriods();
       }
-    } catch (error: any) {
+    } catch (error) {
       set({
-        error: error.message || "Failed to update timesheet",
+        error:
+          error instanceof APIError
+            ? error.message
+            : "Failed to update timesheet",
         isLoading: false,
       });
-    } finally {
-      set({ isLoading: false });
     }
   },
 
@@ -99,6 +104,7 @@ export const usePayrollStore = create<PayrollState>((set, get) => ({
     try {
       set({ isLoading: true, error: null });
       const blob = await payrollApi.exportToExcel(periodId);
+
       // Create download link
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -107,10 +113,17 @@ export const usePayrollStore = create<PayrollState>((set, get) => ({
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-    } catch (error: any) {
-      set({ error: error.message || "Failed to export to Excel" });
-    } finally {
+      window.URL.revokeObjectURL(url);
+
       set({ isLoading: false });
+    } catch (error) {
+      set({
+        error:
+          error instanceof APIError
+            ? error.message
+            : "Failed to export to Excel",
+        isLoading: false,
+      });
     }
   },
 
@@ -118,12 +131,19 @@ export const usePayrollStore = create<PayrollState>((set, get) => ({
     try {
       set({ isLoading: true, error: null });
       await payrollApi.completePeriod(periodId);
+
       await get().fetchPayPeriods();
       if (get().currentPeriod?.id === periodId) {
         await get().fetchPeriodDetail(periodId);
       }
-    } catch (error: any) {
-      set({ error: error.message || "Failed to complete period" });
+    } catch (error) {
+      set({
+        error:
+          error instanceof APIError
+            ? error.message
+            : "Failed to complete period",
+        isLoading: false,
+      });
     } finally {
       set({ isLoading: false });
     }

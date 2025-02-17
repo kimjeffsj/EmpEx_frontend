@@ -10,6 +10,8 @@ import {
   CreateBulkScheduleDto,
   ReviewRequestDto,
   ReviewResponseDto,
+  WeeklyScheduleParams,
+  MonthlyScheduleParams,
 } from "@/types/schedule.types";
 
 const BASE_PATH = "/schedules";
@@ -18,7 +20,10 @@ export const scheduleApi = {
   // 일정 목록 조회
   getSchedules: async (filters: ScheduleFilters) => {
     const queryString = createQueryString(filters);
-    return apiClient.get<ScheduleListResponse>(`${BASE_PATH}?${queryString}`);
+    const response = await apiClient.get<ScheduleListResponse>(
+      `${BASE_PATH}?${queryString}`
+    );
+    return response.data.data;
   },
 
   // 단일 일정 조회
@@ -62,17 +67,19 @@ export const scheduleApi = {
   },
 
   // 주간 일정 조회
-  getWeeklySchedule: async (startDate: string, endDate: string) => {
-    return apiClient.get<ScheduleListResponse>(
-      `${BASE_PATH}/weekly?startDate=${startDate}&endDate=${endDate}`
+  getWeeklySchedule: async (params: WeeklyScheduleParams) => {
+    const response = await apiClient.get<ScheduleListResponse>(
+      `${BASE_PATH}/weekly?year=${params.year}&week=${params.week}`
     );
+    return response.data.data;
   },
 
   // 월간 일정 조회
-  getMonthlySchedule: async (year: number, month: number) => {
-    return apiClient.get<ScheduleListResponse>(
-      `${BASE_PATH}/monthly?year=${year}&month=${month}`
+  getMonthlySchedule: async (params: MonthlyScheduleParams) => {
+    const response = await apiClient.get<ScheduleListResponse>(
+      `${BASE_PATH}/monthly?year=${params.year}&month=${params.month}`
     );
+    return response.data.data;
   },
 
   // 직원별 일정 조회

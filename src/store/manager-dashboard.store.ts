@@ -24,17 +24,10 @@ export const useManagerDashboardStore = create<ManagerDashboardState>(
 
         const response = await dashboardApi.getManagerStats();
 
-        // 백엔드 응답을 프론트엔드로 변환
-        const formattedResponse: ManagerDashboardStats = {
-          employee: {
-            totalEmployees: 
-          }
-        }
-
-        console.log("Received stats:", stats); // 디버깅용
+        console.log("Received stats:", response); // 디버깅용
 
         set({
-          stats,
+          stats: response.data.data,
           isLoading: false,
         });
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
