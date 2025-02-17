@@ -6,12 +6,11 @@ import { Button } from "@/components/ui/button";
 import { UserPlus } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Column, DataTable } from "@/components/common/data-table";
-import { Employee } from "@/types/manager-employeeList.types";
-import { useEmployeeStore } from "@/store/employee.store";
 
+import { useEmployeeStore } from "@/store/employee.store";
 import ErrorFallback from "@/components/common/error-fallback";
-import LoadingSpinner from "@/components/common/loading-spinner";
 import { formatDate } from "@/lib/utils/date.utils";
+import { Employee } from "@/types/features/employee.types";
 
 const columns: Column<Employee>[] = [
   {
@@ -54,11 +53,8 @@ export default function EmployeesPage() {
   const {
     employees,
     isLoading,
+    meta,
     error,
-    page,
-    limit,
-    total,
-    totalPages,
     filters,
     fetchEmployees,
     setFilters,
@@ -117,12 +113,12 @@ export default function EmployeesPage() {
       <Card>
         <DataTable<Employee>
           columns={columns}
-          data={employees}
+          data={employees || []}
           isLoading={isLoading}
           onRowClick={handleRowClick}
           pagination={{
-            currentPage: page,
-            totalPages,
+            currentPage: meta.page,
+            totalPages: meta.totalPages,
             onPageChange: handlePageChange,
           }}
           search={{

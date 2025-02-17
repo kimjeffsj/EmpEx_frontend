@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import LoadingSpinner from "./loading-spinner";
-import { ID } from "@/types/common.types";
+import { ID } from "@/types/common/base.types";
 
 export interface Column<T> {
   key: keyof T;

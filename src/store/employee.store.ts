@@ -1,24 +1,25 @@
 import { create } from "zustand";
 import { employeeApi } from "@/lib/api/employee.api";
-import {
-  Employee,
-  EmployeeFilters,
-  CreateEmployeeDto,
-  UpdateEmployeeDto,
-  EmployeeListResponse,
-} from "@/types/manager-employeeList.types";
 import { APIError } from "@/lib/utils/api.utils";
+import {
+  CreateEmployeeDto,
+  Employee,
+  UpdateEmployeeDto,
+} from "@/types/features/employee.types";
+import { BaseFilter } from "@/types/common/base.types";
 
 interface EmployeeState {
   employees: Employee[];
   selectedEmployee: Employee | null;
   isLoading: boolean;
   error: string | null;
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
-  filters: EmployeeFilters;
+  filters: BaseFilter;
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
 
   // Actions
   fetchEmployees: () => Promise<void>;
@@ -26,15 +27,21 @@ interface EmployeeState {
   createEmployee: (data: CreateEmployeeDto) => Promise<void>;
   updateEmployee: (id: number, data: UpdateEmployeeDto) => Promise<void>;
   deleteEmployee: (id: number) => Promise<void>;
-  setFilters: (filters: Partial<EmployeeFilters>) => void;
+  setFilters: (filters: Partial<BaseFilter>) => void;
   resetFilters: () => void;
   clearError: () => void;
 }
 
-const DEFAULT_FILTERS: EmployeeListResponse = {
+const DEFAULT_FILTERS: BaseFilter = {
   page: 1,
   limit: 10,
-  isResigned: false,
+};
+
+const DEFAULT_META = {
+  page: 1,
+  limit: 10,
+  total: 0,
+  totalPages: 1,
 };
 
 export const useEmployeeStore = create<EmployeeState>((set, get) => ({
@@ -42,11 +49,8 @@ export const useEmployeeStore = create<EmployeeState>((set, get) => ({
   selectedEmployee: null,
   isLoading: false,
   error: null,
-  page: 1,
-  limit: 10,
-  total: 0,
-  totalPages: 1,
   filters: DEFAULT_FILTERS,
+  meta: DEFAULT_META,
 
   fetchEmployees: async () => {
     try {
@@ -55,10 +59,9 @@ export const useEmployeeStore = create<EmployeeState>((set, get) => ({
 
       if (response.success && response.data) {
         set({
-          employees: response.data.data,
-          total: response.data.meta.total,
-          page: response.data.meta.page,
-          totalPages: response.data.meta.totalPages,
+          employees: response.data,
+          meta: response.meta || DEFAULT_META,
+          isLoading: false,
         });
       }
     } catch (error) {
@@ -67,9 +70,8 @@ export const useEmployeeStore = create<EmployeeState>((set, get) => ({
           error instanceof APIError
             ? error.message
             : "Failed to fetch employees",
+        isLoading: false,
       });
-    } finally {
-      set({ isLoading: false });
     }
   },
 
