@@ -2,53 +2,99 @@ import { createQueryString } from "../utils/api.utils";
 import { apiClient } from "./client.api";
 import {
   CreateBulkScheduleDto,
-  Schedule,
   ScheduleFilters,
 } from "@/types/features/schedule.types";
 import { ApiResponse } from "@/types/common/api.types";
+import { Timesheet } from "@/types/features/timesheet.types";
 
 const BASE_PATH = "/schedules";
-
-const locationList = ["No 3", "West Minster"];
 
 export const scheduleApi = {
   // 일정 목록 조회
   getSchedules: async (filters: ScheduleFilters) => {
-    const queryString = createQueryString(filters);
-    return apiClient.get<ApiResponse<Schedule[]>>(
-      `${BASE_PATH}?${queryString}`
-    );
-  },
-
-  getEmployeeSchedules: async (
-    employeeId: number,
-    startDate: string,
-    endDate: string
-  ) => {
-    return apiClient.get<ApiResponse<Schedule[]>>(
-      `${BASE_PATH}/employee/${employeeId}?startDate=${startDate}&endDate=${endDate}`
-    );
+    try {
+      const queryString = createQueryString(filters);
+      return await apiClient.get<ApiResponse<Timesheet[]>>(
+        `${BASE_PATH}?${queryString}`
+      );
+    } catch (error) {
+      // 에러가 ApiResponse 형태인 경우
+      if (error && typeof error === "object" && "data" in error) {
+        throw error;
+      }
+      // 기타 에러의 경우 기본 에러 응답 생성
+      throw {
+        success: false,
+        data: null,
+        error: {
+          code: "SERVER_ERROR",
+          message:
+            error instanceof Error
+              ? error.message
+              : "An unknown error occurred",
+        },
+      };
+    }
   },
 
   // 다수 스케줄 생성
   createBulkSchedules: async (data: CreateBulkScheduleDto) => {
-    return apiClient.post<ApiResponse<Schedule[]>>(`${BASE_PATH}/bulk`, data);
+    try {
+      return await apiClient.post<ApiResponse<Timesheet[]>>(
+        `${BASE_PATH}/bulk`,
+        data
+      );
+    } catch (error) {
+      if (error && typeof error === "object" && "data" in error) {
+        throw error;
+      }
+      throw {
+        success: false,
+        data: null,
+        error: {
+          code: "SERVER_ERROR",
+          message:
+            error instanceof Error
+              ? error.message
+              : "Failed to create schedules",
+        },
+      };
+    }
   },
 
-  // 근무 장소 목록 조회 (하드코딩된 기본값 제공)
+  // 근무 장소 목록 조회
   getLocations: async () => {
     try {
-      const response = await apiClient.get<ApiResponse<string[]>>(
+      return await apiClient.get<ApiResponse<string[]>>(
         `${BASE_PATH}/locations`
       );
-      return response;
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
-      // API 호출 실패시 기본 장소 목록 반환
       return {
         success: true,
-        data: locationList,
+        data: ["No 3", "West Minster"],
         timestamp: new Date().toISOString(),
+      };
+    }
+  },
+
+  // 스케줄 삭제
+  deleteSchedule: async (id: number) => {
+    try {
+      return await apiClient.delete<ApiResponse<void>>(`${BASE_PATH}/${id}`);
+    } catch (error) {
+      if (error && typeof error === "object" && "data" in error) {
+        throw error;
+      }
+      throw {
+        success: false,
+        data: null,
+        error: {
+          code: "SERVER_ERROR",
+          message:
+            error instanceof Error
+              ? error.message
+              : "Failed to delete schedule",
+        },
       };
     }
   },

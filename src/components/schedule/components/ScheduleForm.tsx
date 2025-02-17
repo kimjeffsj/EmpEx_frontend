@@ -4,6 +4,10 @@ import { LocationSelect } from "../shared/LocationSelect";
 import { FormState } from "@/hooks/useScheduleForm";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { usePayrollStore } from "@/store/payroll.store";
+import { Card } from "@/components/ui/card";
+import { useEffect } from "react";
+import { format } from "date-fns";
 
 interface ScheduleFormFieldsProps {
   formState: FormState;
@@ -22,12 +26,34 @@ export function ScheduleFormFields({
   validationError,
   isSubmitting,
 }: ScheduleFormFieldsProps) {
+  const { periods, fetchPayPeriods } = usePayrollStore();
+
+  useEffect(() => {
+    fetchPayPeriods();
+  }, [fetchPayPeriods]);
+
+  // Find the current pay period based on the selected date
+  const currentPayPeriod = periods.find((period) => {
+    const startDate = new Date(period.startDate);
+    const endDate = new Date(period.endDate);
+    return formState.startDate >= startDate && formState.startDate <= endDate;
+  });
+
   return (
     <div className="grid gap-6 py-4">
       {validationError && (
         <Alert variant="destructive">
           <AlertDescription>{validationError}</AlertDescription>
         </Alert>
+      )}
+
+      {currentPayPeriod && (
+        <Card className="p-4 bg-muted">
+          <p className="text-sm text-muted-foreground">
+            Pay Period: {format(new Date(currentPayPeriod.startDate), "MMM d")}{" "}
+            - {format(new Date(currentPayPeriod.endDate), "MMM d, yyyy")}
+          </p>
+        </Card>
       )}
 
       <div className="space-y-2">
