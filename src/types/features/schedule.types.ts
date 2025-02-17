@@ -1,4 +1,4 @@
-import { ID } from "../common/base.types";
+import { BaseFilter, ID } from "../common/base.types";
 
 export type ScheduleStatus =
   | "SCHEDULED"
@@ -36,4 +36,43 @@ export interface CreateScheduleDto {
   isHoliday?: boolean;
   holidayName?: string;
   payPeriodId?: ID;
+}
+
+export interface CreateBulkScheduleDto {
+  employeeIds: number[];
+  startTime: Date;
+  endTime: Date;
+  location?: string;
+  isHoliday?: boolean;
+  holidayName?: string;
+  payPeriodId: number;
+}
+
+export interface UpdateScheduleDto {
+  startTime?: Date;
+  endTime?: Date;
+  location?: string;
+  isHoliday?: boolean;
+  holidayName?: string;
+  status?: ScheduleStatus;
+  reviewComment?: string;
+}
+
+export interface ReviewRequestDto {
+  reviewReason: string;
+  startTime: Date;
+  endTime: Date;
+}
+
+export interface ReviewResponseDto {
+  reviewComment: string;
+  status: ScheduleStatus;
+}
+
+export interface ScheduleFilters extends BaseFilter {
+  employeeId?: number;
+  startDate?: Date;
+  endDate?: Date;
+  status?: ScheduleStatus;
+  location?: string;
 }

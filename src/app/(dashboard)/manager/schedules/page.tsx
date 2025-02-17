@@ -22,25 +22,18 @@ export default function SchedulesPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-  const { schedules, employees, locations, isLoading, error, createSchedule } =
-    useSchedules(currentDate);
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <LoadingSpinner text="Loading schedules..." />
-      </div>
-    );
-  }
-
-  if (error) {
-    return <ErrorFallback message={error} />;
-  }
-
-  // const handleCreateSchedule = async (data: CreateBulkScheduleDto) => {
-  //   createSchedule(data);
-  //   setIsCreateModalOpen(false);
-  // };
+  // 스케줄 데이터 로딩
+  const {
+    schedules = [],
+    employees = [],
+    locations = [],
+    isLoading,
+    error,
+    createSchedule,
+  } = useSchedules({
+    startDate: startOfMonth(currentDate),
+    endDate: endOfMonth(currentDate),
+  });
 
   // 달력에 표시할 날짜들 계산
   const daysInMonth = eachDayOfInterval({
@@ -56,6 +49,10 @@ export default function SchedulesPage() {
   const handleNextMonth = () => {
     setCurrentDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1));
   };
+
+  if (error) {
+    return <ErrorFallback message={error} />;
+  }
 
   return (
     <div className="space-y-6 p-6">
@@ -74,7 +71,11 @@ export default function SchedulesPage() {
             <Filter className="h-4 w-4" />
             Filter
           </Button>
-          <Button className="gap-2" onClick={() => setIsCreateModalOpen(true)}>
+          <Button
+            className="gap-2"
+            onClick={() => setIsCreateModalOpen(true)}
+            disabled={isLoading}
+          >
             <Plus className="h-4 w-4" />
             Create Schedule
           </Button>
@@ -128,60 +129,66 @@ export default function SchedulesPage() {
           </div>
         </div>
 
-        {/* Calendar Grid */}
-        <div className="grid grid-cols-7 gap-px bg-muted rounded-lg overflow-hidden">
-          {/* Calendar Header */}
-          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-            <div
-              key={day}
-              className="bg-card p-2 text-center text-sm font-medium"
-            >
-              {day}
-            </div>
-          ))}
-
-          {/* Calendar Days */}
-          {daysInMonth.map((date) => {
-            const daySchedules = schedules.filter(
-              (schedule) =>
-                format(new Date(schedule.startTime), "yyyy-MM-dd") ===
-                format(date, "yyyy-MM-dd")
-            );
-
-            return (
+        {isLoading ? (
+          <div className="min-h-[500px] flex items-center justify-center">
+            <LoadingSpinner text="Loading schedules..." />
+          </div>
+        ) : (
+          /* Calendar Grid */
+          <div className="grid grid-cols-7 gap-px bg-muted rounded-lg overflow-hidden">
+            {/* Calendar Header */}
+            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
               <div
-                key={date.toISOString()}
-                className="bg-card min-h-[120px] p-2 hover:bg-accent/50 transition-colors"
+                key={day}
+                className="bg-card p-2 text-center text-sm font-medium"
               >
-                <span className="text-sm text-muted-foreground">
-                  {format(date, "d")}
-                </span>
-                <div className="mt-1 space-y-1">
-                  {daySchedules.map((schedule) => (
-                    <div
-                      key={schedule.id}
-                      className="text-xs p-1 rounded bg-primary/10 cursor-pointer hover:bg-primary/20"
-                    >
-                      <div className="font-medium">
-                        {format(new Date(schedule.startTime), "HH:mm")} -
-                        {format(new Date(schedule.endTime), "HH:mm")}
-                      </div>
-                      <div className="truncate">
-                        {schedule.employee.firstName}{" "}
-                        {schedule.employee.lastName}
-                      </div>
-                      {schedule.location && (
-                        <Badge variant="outline" className="mt-1">
-                          {schedule.location}
-                        </Badge>
-                      )}
-                    </div>
-                  ))}
-                </div>
+                {day}
               </div>
-            );
-          })}
-        </div>
+            ))}
+
+            {/* Calendar Days */}
+            {daysInMonth.map((date) => {
+              const daySchedules = schedules.filter(
+                (schedule) =>
+                  format(new Date(schedule.startTime), "yyyy-MM-dd") ===
+                  format(date, "yyyy-MM-dd")
+              );
+
+              return (
+                <div
+                  key={date.toISOString()}
+                  className="bg-card min-h-[120px] p-2 hover:bg-accent/50 transition-colors"
+                >
+                  <span className="text-sm text-muted-foreground">
+                    {format(date, "d")}
+                  </span>
+                  <div className="mt-1 space-y-1">
+                    {daySchedules.map((schedule) => (
+                      <div
+                        key={schedule.id}
+                        className="text-xs p-1 rounded bg-primary/10 cursor-pointer hover:bg-primary/20"
+                      >
+                        <div className="font-medium">
+                          {format(new Date(schedule.startTime), "HH:mm")} -
+                          {format(new Date(schedule.endTime), "HH:mm")}
+                        </div>
+                        <div className="truncate">
+                          {schedule.employee.firstName}{" "}
+                          {schedule.employee.lastName}
+                        </div>
+                        {schedule.location && (
+                          <Badge variant="outline" className="mt-1">
+                            {schedule.location}
+                          </Badge>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </Card>
 
       {/* Create Schedule Modal */}

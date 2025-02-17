@@ -6,11 +6,12 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { CreateBulkScheduleDto } from "@/types/schedule.types";
-import { Employee } from "@/types/manager-employeeList.types";
+
 import { useScheduleForm } from "@/hooks/useScheduleForm";
 import { ScheduleFormFields } from "../components/ScheduleForm";
 import { LoadingSpinner } from "@/components/common/loading-spinner";
+import { CreateBulkScheduleDto } from "@/types/features/schedule.types";
+import { Employee } from "@/types/features/employee.types";
 
 interface CreateScheduleModalProps {
   isOpen: boolean;

@@ -3,10 +3,15 @@ import { useToast } from "./useToast";
 import { scheduleApi } from "@/lib/api/schedule.api";
 import { employeeApi } from "@/lib/api/employee.api";
 
-import { ScheduleFilters } from "@/types/schedule.types";
 import { APIError } from "@/lib/utils/api.utils";
 
-export function useSchedules(currentDate: Date) {
+export function useSchedules({
+  startDate,
+  endDate,
+}: {
+  startDate: Date;
+  endDate: Date;
+}) {
   const toast = useToast();
   const queryClient = useQueryClient();
 
@@ -16,20 +21,12 @@ export function useSchedules(currentDate: Date) {
     isLoading: isSchedulesLoading,
     error: scheduleError,
   } = useQuery({
-    queryKey: ["schedules", currentDate],
+    queryKey: ["schedules", startDate, endDate],
     queryFn: () =>
       scheduleApi.getSchedules({
-        startDate: new Date(
-          currentDate.getFullYear(),
-          currentDate.getMonth(),
-          1
-        ).toISOString(),
-        endDate: new Date(
-          currentDate.getFullYear(),
-          currentDate.getMonth() + 1,
-          0
-        ).toISOString(),
-      } as ScheduleFilters),
+        startDate,
+        endDate,
+      }),
   });
 
   // 직원 목록 쿼리

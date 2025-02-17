@@ -1,4 +1,3 @@
-import { User } from "@/types/auth.types";
 import { useAuthStore } from "@/store/auth.store";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -11,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useRouter } from "next/navigation";
+import { User } from "@/types/features/auth.types";
 
 interface UserNavProps {
   user: User;
