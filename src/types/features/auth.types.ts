@@ -1,6 +1,9 @@
 import { ID } from "../common/base.types";
 
-export type UserRole = "MANAGER" | "EMPLOYEE";
+export enum UserRole {
+  MANAGER = "MANAGER",
+  EMPLOYEE = "EMPLOYEE",
+}
 
 export interface User {
   id: ID;
@@ -18,4 +21,18 @@ export interface User {
 export interface LoginCredentials {
   email: string;
   password: string;
+}
+
+export interface ProtectedRoute {
+  path: string;
+  roles: UserRole[];
+}
+
+export interface TokenPayload {
+  id: number;
+  email: string;
+  role: UserRole;
+  employeeId?: number;
+  exp?: number;
+  iat?: number;
 }

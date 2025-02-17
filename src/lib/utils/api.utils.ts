@@ -1,19 +1,15 @@
-import {
-  ApiError,
-  ApiErrorCode,
-  API_ERROR_STATUS_MAP,
-} from "@/types/api.types";
+import { ApiError, ApiErrorCode } from "@/types/common/api.types";
 import { AxiosError } from "axios";
 
 export class APIError extends Error {
   public readonly code: ApiErrorCode;
-  public readonly status: number;
+  public readonly message: ApiErrorCode | string;
   public readonly details?: Record<string, unknown>;
 
   constructor(error: ApiError) {
     super(error.message);
     this.code = error.code;
-    this.status = API_ERROR_STATUS_MAP[error.code];
+    this.message = error.message;
     this.details = error.details;
     this.name = "APIError";
   }

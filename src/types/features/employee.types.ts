@@ -26,6 +26,15 @@ export interface CreateEmployeeDto {
   startDate: string;
 }
 
+export interface UpdateEmployeeDto {
+  firstName?: string;
+  lastName?: string;
+  address?: string;
+  email?: string;
+  payRate?: number;
+  resignedDate?: Date;
+}
+
 export interface EmployeeFilter extends BaseFilter {
   isResigned?: boolean;
 }
