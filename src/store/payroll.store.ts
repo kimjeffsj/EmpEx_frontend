@@ -1,39 +1,29 @@
 import { create } from "zustand";
 import { payrollApi } from "@/lib/api/payroll.api";
-
 import { APIError } from "@/lib/utils/api.utils";
 import {
-  PayPeriod,
-  PayPeriodDetail,
-  PayrollSummary,
-  TimesheetUpdateDto,
-} from "@/types/\bpayroll.types";
+  PayPeriodResponse,
+  PayrollExport,
+} from "@/types/features/payroll.types";
 
 interface PayrollState {
   // State
-  periods: PayPeriod[];
-  currentPeriod: PayPeriodDetail | null;
-  summary: PayrollSummary | null;
+  periods: PayPeriodResponse[];
+  selectedPeriod: PayPeriodResponse | null;
   isLoading: boolean;
   error: string | null;
 
   // Actions
   fetchPayPeriods: () => Promise<void>;
-  fetchPeriodDetail: (periodId: number) => Promise<void>;
-  updateTimesheet: (
-    timesheetId: number,
-    data: TimesheetUpdateDto
-  ) => Promise<void>;
+  selectPeriod: (periodId: number) => void;
   exportToExcel: (periodId: number) => Promise<void>;
-  completePeriod: (periodId: number) => Promise<void>;
   clearError: () => void;
 }
 
 export const usePayrollStore = create<PayrollState>((set, get) => ({
-  // Initial state
+  // Initial State
   periods: [],
-  currentPeriod: null,
-  summary: null,
+  selectedPeriod: null,
   isLoading: false,
   error: null,
 
@@ -42,10 +32,13 @@ export const usePayrollStore = create<PayrollState>((set, get) => ({
     try {
       set({ isLoading: true, error: null });
       const response = await payrollApi.getPayPeriods();
-      set({
-        periods: response.data.data,
-        isLoading: false,
-      });
+
+      if (response.success && response.data) {
+        set({
+          periods: response.data,
+          isLoading: false,
+        });
+      }
     } catch (error) {
       set({
         error:
@@ -57,64 +50,34 @@ export const usePayrollStore = create<PayrollState>((set, get) => ({
     }
   },
 
-  fetchPeriodDetail: async (periodId: number) => {
-    try {
-      set({ isLoading: true, error: null });
-      const response = await payrollApi.getPayPeriodDetail(periodId);
-      set({
-        currentPeriod: response.data.data.period,
-        summary: response.data.data.summary,
-        isLoading: false,
-      });
-    } catch (error) {
-      set({
-        error:
-          error instanceof APIError
-            ? error.message
-            : "Failed to fetch period detail",
-        isLoading: false,
-      });
-    }
-  },
-
-  updateTimesheet: async (timesheetId: number, data: TimesheetUpdateDto) => {
-    const currentPeriod = get().currentPeriod;
-
-    try {
-      set({ isLoading: true, error: null });
-      await payrollApi.updateTimesheet(timesheetId, data);
-
-      if (currentPeriod?.id) {
-        await get().fetchPeriodDetail(currentPeriod.id);
-      } else {
-        await get().fetchPayPeriods();
-      }
-    } catch (error) {
-      set({
-        error:
-          error instanceof APIError
-            ? error.message
-            : "Failed to update timesheet",
-        isLoading: false,
-      });
-    }
+  selectPeriod: (periodId: number) => {
+    const period = get().periods.find((p) => p.id === periodId);
+    set({ selectedPeriod: period || null });
   },
 
   exportToExcel: async (periodId: number) => {
     try {
       set({ isLoading: true, error: null });
-      const blob = await payrollApi.exportToExcel(periodId);
+      const period = get().periods.find((p) => p.id === periodId);
 
-      // Create download link
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `payroll-period-${periodId}.xlsx`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      if (!period) {
+        throw new Error("Period not found");
+      }
 
+      // 엑셀 데이터 준비
+      const exportData: PayrollExport[] = period.payrolls.map((payroll) => ({
+        employeeName: `${payroll.employee.firstName} ${payroll.employee.lastName}`,
+        employeeId: payroll.employeeId,
+        payPeriod: `${period.startDate} - ${period.endDate}`,
+        regularHours: Number(payroll.totalRegularHours),
+        overtimeHours: Number(payroll.totalOvertimeHours),
+        totalHours: Number(payroll.totalHours),
+        payRate: Number(payroll.employee.payRate),
+        grossPay: payroll.grossPay,
+        status: payroll.status,
+      }));
+
+      await payrollApi.exportToExcel(periodId);
       set({ isLoading: false });
     } catch (error) {
       set({
@@ -124,28 +87,6 @@ export const usePayrollStore = create<PayrollState>((set, get) => ({
             : "Failed to export to Excel",
         isLoading: false,
       });
-    }
-  },
-
-  completePeriod: async (periodId: number) => {
-    try {
-      set({ isLoading: true, error: null });
-      await payrollApi.completePeriod(periodId);
-
-      await get().fetchPayPeriods();
-      if (get().currentPeriod?.id === periodId) {
-        await get().fetchPeriodDetail(periodId);
-      }
-    } catch (error) {
-      set({
-        error:
-          error instanceof APIError
-            ? error.message
-            : "Failed to complete period",
-        isLoading: false,
-      });
-    } finally {
-      set({ isLoading: false });
     }
   },
 

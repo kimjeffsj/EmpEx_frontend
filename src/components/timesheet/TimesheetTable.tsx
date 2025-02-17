@@ -1,5 +1,4 @@
-import React from "react";
-import { format } from "date-fns";
+import React, { useEffect } from "react";
 import {
   Table,
   TableHeader,
@@ -9,17 +8,28 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Edit2, MoreHorizontal } from "lucide-react";
+import { CalendarSearch, Edit2, MoreHorizontal } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Employee } from "@/types/manager-employeeList.types";
+import { Employee } from "@/types/features/employee.types";
+import { PayrollStatus } from "@/types/features/payroll.types";
+
+interface EmployeeWithPayroll extends Employee {
+  payroll: {
+    regularHours: number;
+    overtimeHours: number;
+    totalHours: number;
+    grossPay: number;
+    status: PayrollStatus;
+  };
+}
 
 interface TimesheetTableProps {
-  employees: Employee[];
+  employees: EmployeeWithPayroll[];
   periodStart: Date;
   periodEnd: Date;
   onEditTime: (employeeId: number) => void;
@@ -27,17 +37,30 @@ interface TimesheetTableProps {
 
 const TimesheetTable: React.FC<TimesheetTableProps> = ({
   employees,
-  periodStart,
-  periodEnd,
   onEditTime,
 }) => {
+  useEffect(() => {
+    console.log(employees);
+  }, [employees]);
+
+  if (!employees.length) {
+    return (
+      <div className="rounded-md border p-8 text-center">
+        <CalendarSearch className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+        <h3 className="text-lg font-medium mb-2">No Payroll Data Available</h3>
+        <p className="text-muted-foreground">
+          No payroll records found for this period.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="rounded-md border">
       <Table>
         <TableHeader>
           <TableRow>
             <TableHead>Employee Name</TableHead>
-            <TableHead>Work Period</TableHead>
             <TableHead className="text-right">Regular Hours</TableHead>
             <TableHead className="text-right">Overtime Hours</TableHead>
             <TableHead className="text-right">Total Hours</TableHead>
@@ -53,20 +76,30 @@ const TimesheetTable: React.FC<TimesheetTableProps> = ({
               <TableCell className="font-medium">
                 {employee.firstName} {employee.lastName}
               </TableCell>
-              <TableCell>
-                {format(periodStart, "yyyy-MM-dd")} ~{" "}
-                {format(periodEnd, "yyyy-MM-dd")}
-              </TableCell>
-              <TableCell className="text-right">40.0</TableCell>
-              <TableCell className="text-right">2.5</TableCell>
-              <TableCell className="text-right">42.5</TableCell>
               <TableCell className="text-right">
-                ${employee.payRate?.toFixed(2)}
+                {employee.payroll.regularHours.toFixed(1)}
               </TableCell>
-              <TableCell className="text-right">$680.00</TableCell>
+              <TableCell className="text-right">
+                {employee.payroll.overtimeHours.toFixed(1)}
+              </TableCell>
+              <TableCell className="text-right">
+                {employee.payroll.totalHours.toFixed(1)}
+              </TableCell>
+              <TableCell className="text-right">
+                ${Number(employee.payRate).toFixed(2)}
+              </TableCell>
+              <TableCell className="text-right">
+                ${employee.payroll.grossPay.toFixed(2)}
+              </TableCell>
               <TableCell className="text-center">
-                <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-green-100 text-green-800">
-                  Completed
+                <span
+                  className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                    employee.payroll.status === "COMPLETED"
+                      ? "bg-green-100 text-green-800"
+                      : "bg-yellow-100 text-yellow-800"
+                  }`}
+                >
+                  {employee.payroll.status}
                 </span>
               </TableCell>
               <TableCell>
