@@ -3,30 +3,34 @@ import { useToast } from "./useToast";
 import { scheduleApi } from "@/lib/api/schedule.api";
 import { employeeApi } from "@/lib/api/employee.api";
 
-export function useSchedules(currentDate: Date) {
+import { APIError } from "@/lib/utils/api.utils";
+
+export function useSchedules({
+  startDate,
+  endDate,
+}: {
+  startDate: Date;
+  endDate: Date;
+}) {
   const toast = useToast();
   const queryClient = useQueryClient();
 
-  // Schedules query
-  const { data: schedules, isLoading: isSchedulesLoading } = useQuery({
-    queryKey: ["schedules", currentDate],
+  // 스케줄 쿼리
+  const {
+    data: scheduleResponse,
+    isLoading: isSchedulesLoading,
+    error: scheduleError,
+  } = useQuery({
+    queryKey: ["schedules", startDate, endDate],
     queryFn: () =>
       scheduleApi.getSchedules({
-        startDate: new Date(
-          currentDate.getFullYear(),
-          currentDate.getMonth(),
-          1
-        ),
-        endDate: new Date(
-          currentDate.getFullYear(),
-          currentDate.getMonth() + 1,
-          0
-        ),
+        startDate,
+        endDate,
       }),
   });
 
-  // Employees list query
-  const { data: employees, isLoading: isEmployeesLoading } = useQuery({
+  // 직원 목록 쿼리
+  const { data: employeeResponse, isLoading: isEmployeesLoading } = useQuery({
     queryKey: ["employees"],
     queryFn: () =>
       employeeApi.getEmployees({
@@ -36,32 +40,36 @@ export function useSchedules(currentDate: Date) {
       }),
   });
 
-  // Locations list query
-  const { data: locations, isLoading: isLocationsLoading } = useQuery({
+  // 근무 장소 목록 쿼리
+  const { data: locationResponse, isLoading: isLocationsLoading } = useQuery({
     queryKey: ["locations"],
     queryFn: () => scheduleApi.getLocations(),
   });
 
-  // Create schedule mutation
-  const { mutate: createSchedule } = useMutation({
+  // 스케줄 생성 뮤테이션
+  const { mutateAsync: createSchedule } = useMutation({
     mutationFn: scheduleApi.createBulkSchedules,
     onSuccess: () => {
       toast.success("Schedule created successfully");
       queryClient.invalidateQueries({ queryKey: ["schedules"] });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast.error(
         "Failed to create schedule",
-        error?.error?.message || "Please try again"
+        error instanceof APIError ? error.message : "Please try again"
       );
     },
   });
 
   return {
-    schedules: schedules?.data?.data || [],
-    employees: employees?.data?.data || [],
-    locations: locations?.data || [],
+    schedules: scheduleResponse?.data?.data || [],
+    employees: employeeResponse?.data?.data || [],
+    locations: locationResponse?.data || [],
     isLoading: isSchedulesLoading || isEmployeesLoading || isLocationsLoading,
+    error:
+      scheduleError instanceof APIError
+        ? scheduleError.message
+        : scheduleError?.toString(),
     createSchedule,
   };
 }

@@ -3,6 +3,7 @@
 import ErrorFallback from "@/components/common/error-fallback";
 import { EmployeeDashboardContent } from "@/components/dashboard/employee/dashboard-content";
 import { LoadingDialog } from "@/components/ui/loading-dialog";
+import { APIError } from "@/lib/utils/api.utils";
 import { useEmployeeDashboardStore } from "@/store/employee-dashboard.store";
 import { useEffect } from "react";
 
@@ -18,7 +19,14 @@ export default function EmployeeDashboard() {
   }
 
   if (error) {
-    return <ErrorFallback message={error} onRetry={fetchStats} />;
+    return (
+      <ErrorFallback
+        message={
+          error instanceof APIError ? error.message : "Failed to load dashboard"
+        }
+        onRetry={fetchStats}
+      />
+    );
   }
 
   if (!stats) {

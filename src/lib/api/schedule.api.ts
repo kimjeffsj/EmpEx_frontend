@@ -1,88 +1,55 @@
-import { ApiResponse } from "@/types/api.types";
+import { createQueryString } from "../utils/api.utils";
+import { apiClient } from "./client.api";
 import {
   CreateBulkScheduleDto,
-  CreateScheduleDto,
-  ReviewRequestDto,
-  ReviewResponseDto,
   Schedule,
   ScheduleFilters,
-  ScheduleResponse,
-  SingleScheduleResponse,
-} from "@/types/schedule.types";
-import { api } from "./client.api";
+} from "@/types/features/schedule.types";
+import { ApiResponse } from "@/types/common/api.types";
+
+const BASE_PATH = "/schedules";
+
+const locationList = ["No 3", "West Minster"];
 
 export const scheduleApi = {
+  // 일정 목록 조회
   getSchedules: async (filters: ScheduleFilters) => {
-    const response = await api.get<ApiResponse<ScheduleResponse>>(
-      "/schedules",
-      {
-        params: {
-          page: filters.page,
-          limit: filters.limit,
-          location: filters.location,
-          employeeId: filters.employeeId,
-          startDate: filters.startDate?.toISOString(),
-          endDate: filters.endDate?.toISOString(),
-          status: filters.status,
-        },
-      }
+    const queryString = createQueryString(filters);
+    return apiClient.get<ApiResponse<Schedule[]>>(
+      `${BASE_PATH}?${queryString}`
     );
-    return response.data;
   },
 
-  getSchedule: async (id: number) => {
-    const response = await api.get<ApiResponse<SingleScheduleResponse>>(
-      `/schedules/${id}`
+  getEmployeeSchedules: async (
+    employeeId: number,
+    startDate: string,
+    endDate: string
+  ) => {
+    return apiClient.get<ApiResponse<Schedule[]>>(
+      `${BASE_PATH}/employee/${employeeId}?startDate=${startDate}&endDate=${endDate}`
     );
-    return response.data;
   },
 
-  createSchedule: async (data: CreateScheduleDto) => {
-    const response = await api.post<ApiResponse<Schedule>>("/schedules", data);
-    return response.data;
-  },
-
+  // 다수 스케줄 생성
   createBulkSchedules: async (data: CreateBulkScheduleDto) => {
-    const response = await api.post<ApiResponse<Schedule[]>>(
-      "/schedules/bulk",
-      data
-    );
-    return response.data;
+    return apiClient.post<ApiResponse<Schedule[]>>(`${BASE_PATH}/bulk`, data);
   },
 
-  updateSchedule: async (id: number, data: Partial<CreateScheduleDto>) => {
-    const response = await api.put<ApiResponse<Schedule>>(
-      `/schedules/${id}`,
-      data
-    );
-    return response.data;
-  },
-
-  deleteSchedule: async (id: number) => {
-    const response = await api.delete<ApiResponse<void>>(`/schedules/${id}`);
-    return response.data;
-  },
-
+  // 근무 장소 목록 조회 (하드코딩된 기본값 제공)
   getLocations: async () => {
-    const response = await api.get<ApiResponse<string[]>>(
-      "/schedules/locations"
-    );
-    return response.data;
-  },
-
-  requestReview: async (id: number, data: ReviewRequestDto) => {
-    const response = await api.post<ApiResponse<Schedule>>(
-      `/schedules/${id}/review`,
-      data
-    );
-    return response.data;
-  },
-
-  processReview: async (id: number, data: ReviewResponseDto) => {
-    const response = await api.put<ApiResponse<Schedule>>(
-      `/schedules/${id}/review/process`,
-      data
-    );
-    return response.data;
+    try {
+      const response = await apiClient.get<ApiResponse<string[]>>(
+        `${BASE_PATH}/locations`
+      );
+      return response;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (error) {
+      // API 호출 실패시 기본 장소 목록 반환
+      return {
+        success: true,
+        data: locationList,
+        timestamp: new Date().toISOString(),
+      };
+    }
   },
 };

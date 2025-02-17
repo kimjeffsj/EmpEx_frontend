@@ -31,18 +31,27 @@ const toastStyles: Record<
 interface ToastProps {
   toast: ToastType;
   onRemove: (id: string) => void;
+  autoClose?: boolean;
+  duration?: number;
 }
 
-export const Toast = ({ toast, onRemove }: ToastProps) => {
+export const Toast = ({
+  toast,
+  onRemove,
+  autoClose = true,
+  duration = 5000,
+}: ToastProps) => {
   const { icon, className } = toastStyles[toast.type];
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      onRemove(toast.id);
-    }, 5000);
+    if (autoClose) {
+      const timer = setTimeout(() => {
+        onRemove(toast.id);
+      }, duration);
 
-    return () => clearTimeout(timer);
-  }, [toast.id, onRemove]);
+      return () => clearTimeout(timer);
+    }
+  }, [toast.id, onRemove, autoClose, duration]);
 
   return (
     <div

@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import LoadingSpinner from "./loading-spinner";
+import { ID } from "@/types/common/base.types";
 
 export interface Column<T> {
   key: keyof T;
@@ -20,38 +21,17 @@ export interface Column<T> {
   render?: (value: T[keyof T], item: T) => React.ReactNode;
 }
 
-interface DataTableProps<T> {
-  /**
-   * Column definitions
-   */
+interface DataTableProps<T extends { id: ID }> {
   columns: Column<T>[];
-  /**
-   * Data to display
-   */
   data: T[];
-  /**
-   * Optional loading state
-   */
   isLoading?: boolean;
-  /**
-   * Optional error state
-   */
-  error?: string;
-  /**
-   * Optional row click handler
-   */
+  error?: string | null;
   onRowClick?: (item: T) => void;
-  /**
-   * Optional pagination props
-   */
   pagination?: {
     currentPage: number;
     totalPages: number;
     onPageChange: (page: number) => void;
   };
-  /**
-   * Optional search props
-   */
   search?: {
     value: string;
     onChange: (value: string) => void;
@@ -59,7 +39,7 @@ interface DataTableProps<T> {
   };
 }
 
-export function DataTable<T>({
+export function DataTable<T extends { id: ID }>({
   columns,
   data,
   isLoading,
@@ -73,7 +53,6 @@ export function DataTable<T>({
     direction: "asc" | "desc";
   } | null>(null);
 
-  // Sorting logic
   const handleSort = (key: keyof T) => {
     setSortConfig((current) => {
       if (!current || current.key !== key) {
@@ -169,9 +148,9 @@ export function DataTable<T>({
                 </td>
               </tr>
             ) : (
-              sortedData.map((item, index) => (
+              sortedData.map((item) => (
                 <tr
-                  key={index}
+                  key={item.id}
                   onClick={() => onRowClick?.(item)}
                   className={cn(
                     "border-b transition-colors hover:bg-muted/50",

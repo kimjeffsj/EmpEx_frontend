@@ -7,10 +7,11 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
-import { CreateBulkScheduleDto } from "@/types/schedule.types";
-import { Employee } from "@/types/manager-employeeList.types";
 import { useScheduleForm } from "@/hooks/useScheduleForm";
 import { ScheduleFormFields } from "../components/ScheduleForm";
+import { LoadingSpinner } from "@/components/common/loading-spinner";
+import { CreateBulkScheduleDto } from "@/types/features/schedule.types";
+import { Employee } from "@/types/features/employee.types";
 
 interface CreateScheduleModalProps {
   isOpen: boolean;
@@ -41,10 +42,17 @@ export function CreateScheduleModal({
     onClose();
   };
 
+  const handleFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    await handleSubmit(e);
+    handleClose();
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[600px]">
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleFormSubmit}>
           <DialogHeader>
             <DialogTitle>Create New Schedule</DialogTitle>
           </DialogHeader>
@@ -57,6 +65,7 @@ export function CreateScheduleModal({
             employees={employees}
             locations={locations}
             validationError={validationError}
+            isSubmitting={isSubmitting}
           />
 
           <DialogFooter>
@@ -69,7 +78,14 @@ export function CreateScheduleModal({
               Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Creating..." : "Create Schedule"}
+              {isSubmitting ? (
+                <div className="flex items-center gap-2">
+                  <LoadingSpinner size="sm" />
+                  Creating...
+                </div>
+              ) : (
+                "Create Schedule"
+              )}
             </Button>
           </DialogFooter>
         </form>

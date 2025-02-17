@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { dashboardApi } from "@/lib/api/dashboard.api";
-import { EmployeeDashboardStats } from "@/types/employee-dashboard.types";
+import { EmployeeDashboardStats } from "@/types/dashboard/employee.types";
 
 interface EmployeeDashboardState {
   stats: EmployeeDashboardStats | null;
@@ -20,7 +20,7 @@ export const useEmployeeDashboardStore = create<EmployeeDashboardState>(
       try {
         const stats = await dashboardApi.getEmployeeStats();
         set({
-          stats,
+          stats: stats.data,
           isLoading: false,
         });
         // eslint-disable-next-line @typescript-eslint/no-explicit-any

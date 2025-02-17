@@ -10,6 +10,8 @@ import { Label } from "@/components/ui/label";
 import { EyeIcon, EyeOffIcon } from "lucide-react";
 import { useAuthStore } from "@/store/auth.store";
 import { useRouter } from "next/navigation";
+import { LoginCredentials } from "@/types/auth.types";
+import { APIError } from "@/lib/utils/api.utils";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -31,7 +33,7 @@ export function LoginForm() {
     resolver: zodResolver(loginSchema),
   });
 
-  const onSubmit = async (data: LoginFormData) => {
+  const onSubmit = async (data: LoginCredentials) => {
     const success = await login(data);
     if (success) {
       const user = useAuthStore.getState().user;
@@ -52,9 +54,10 @@ export function LoginForm() {
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       {error && (
         <div className="p-3 text-sm text-destructive bg-destructive/10 rounded-md">
-          {error}
+          {error instanceof APIError ? error.message : error}
         </div>
       )}
+
       <div className="space-y-2">
         <Label htmlFor="email">Email</Label>
         <Input

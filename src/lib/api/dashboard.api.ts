@@ -1,22 +1,23 @@
-import { ManagerDashboardStats } from "@/types/manager-dashboard.types";
-import { api } from "./client.api";
-import { ApiResponse } from "@/types/api.types";
-import { EmployeeDashboardStats } from "@/types/employee-dashboard.types";
+import { apiClient } from "./client.api";
+
+import { createQueryString } from "../utils/api.utils";
+import { BaseFilter } from "@/types/common/base.types";
+import { ManagerDashboardStats } from "@/types/dashboard/manager.types";
+import { EmployeeDashboardStats } from "@/types/dashboard/employee.types";
+
+const BASE_PATH = "/dashboard";
 
 export const dashboardApi = {
-  // Manager Dashboard Stats
-  getManagerStats: async () => {
-    const response = await api.get<ApiResponse<ManagerDashboardStats>>(
-      "/dashboard/manager/stats"
+  // 매니저 대시보드 통계
+  getManagerStats: async (filters?: BaseFilter) => {
+    const queryString = filters ? createQueryString(filters) : "";
+    return apiClient.get<ManagerDashboardStats>(
+      `${BASE_PATH}/manager/stats${queryString ? `?${queryString}` : ""}`
     );
-    return response.data.data;
   },
 
-  // Employee Dashboard Stats
+  // 직원 대시보드 통계
   getEmployeeStats: async () => {
-    const response = await api.get<ApiResponse<EmployeeDashboardStats>>(
-      "/dashboard/employee/stats"
-    );
-    return response.data.data;
+    return apiClient.get<EmployeeDashboardStats>(`${BASE_PATH}/employee/stats`);
   },
 };

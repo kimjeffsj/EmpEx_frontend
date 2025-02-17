@@ -1,6 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { ProtectedRoute, UserRole, TokenPayload } from "./types/auth.types";
+
 import { jwtDecode } from "jwt-decode";
+import {
+  ProtectedRoute,
+  TokenPayload,
+  UserRole,
+} from "./types/features/auth.types";
 
 const PROTECTED_ROUTES: ProtectedRoute[] = [
   {

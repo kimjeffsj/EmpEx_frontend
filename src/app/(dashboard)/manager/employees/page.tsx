@@ -1,15 +1,16 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { UserPlus } from "lucide-react";
-import { format } from "date-fns";
 import { Card } from "@/components/ui/card";
 import { Column, DataTable } from "@/components/common/data-table";
-import { Employee } from "@/types/manager-employeeList.types";
-import { employeeApi } from "@/lib/api/employee.api";
+
+import { useEmployeeStore } from "@/store/employee.store";
+import ErrorFallback from "@/components/common/error-fallback";
+import { formatDate } from "@/lib/utils/date.utils";
+import { Employee } from "@/types/features/employee.types";
 
 const columns: Column<Employee>[] = [
   {
@@ -37,33 +38,31 @@ const columns: Column<Employee>[] = [
     key: "startDate",
     title: "Start Date",
     sortable: true,
-    render: (value: string | number | null) =>
-      value ? format(new Date(value.toString()), "MMM d, yyyy") : "",
+    render: (value) => formatDate(value?.toString(), "MMM d, yyyy"),
   },
   {
     key: "payRate",
     title: "Pay Rate",
     sortable: true,
-    render: (value: string | number | null) =>
-      value ? `$${Number(value).toFixed(2)}/hr` : "",
+    render: (value) => (value ? `$${Number(value).toFixed(2)}/hr` : ""),
   },
 ] as const;
 
 export default function EmployeesPage() {
   const router = useRouter();
-  const [searchTerm, setSearchTerm] = useState("");
-  const [page, setPage] = useState(1);
-  const [limit] = useState(10);
+  const {
+    employees,
+    isLoading,
+    meta,
+    error,
+    filters,
+    fetchEmployees,
+    setFilters,
+  } = useEmployeeStore();
 
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["employees", { page, limit, search: searchTerm }],
-    queryFn: () =>
-      employeeApi.getEmployees({
-        page,
-        limit,
-        search: searchTerm || undefined,
-      }),
-  });
+  useEffect(() => {
+    fetchEmployees();
+  }, [fetchEmployees]);
 
   const handleRowClick = useCallback(
     (employee: Employee) => {
@@ -76,10 +75,23 @@ export default function EmployeesPage() {
     router.push("/manager/employees/new");
   }, [router]);
 
-  const handleSearch = useCallback((value: string) => {
-    setSearchTerm(value);
-    setPage(1);
-  }, []);
+  const handleSearch = useCallback(
+    (value: string) => {
+      setFilters({ search: value, page: 1 });
+    },
+    [setFilters]
+  );
+
+  const handlePageChange = useCallback(
+    (newPage: number) => {
+      setFilters({ page: newPage });
+    },
+    [setFilters]
+  );
+
+  if (error) {
+    return <ErrorFallback message={error} onRetry={fetchEmployees} />;
+  }
 
   return (
     <div className="space-y-6">
@@ -101,17 +113,16 @@ export default function EmployeesPage() {
       <Card>
         <DataTable<Employee>
           columns={columns}
-          data={data?.data?.data ?? []}
+          data={employees || []}
           isLoading={isLoading}
-          error={error?.message}
           onRowClick={handleRowClick}
           pagination={{
-            currentPage: page,
-            totalPages: data?.data?.meta?.totalPages ?? 1,
-            onPageChange: setPage,
+            currentPage: meta.page,
+            totalPages: meta.totalPages,
+            onPageChange: handlePageChange,
           }}
           search={{
-            value: searchTerm,
+            value: filters.search || "",
             onChange: handleSearch,
             placeholder: "Search employees...",
           }}

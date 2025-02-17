@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { create } from "zustand";
 import { scheduleApi } from "@/lib/api/schedule.api";
 import {
@@ -8,7 +7,10 @@ import {
   CreateBulkScheduleDto,
   ReviewRequestDto,
   ReviewResponseDto,
+  WeeklyScheduleParams,
+  MonthlyScheduleParams,
 } from "@/types/schedule.types";
+import { APIError } from "@/lib/utils/api.utils";
 
 interface ScheduleState {
   // State
@@ -18,16 +20,16 @@ interface ScheduleState {
   filters: ScheduleFilters;
   isLoading: boolean;
   error: string | null;
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
 
   // Actions
   setFilters: (filters: Partial<ScheduleFilters>) => void;
   resetFilters: () => void;
-
-  // API Actions
   fetchSchedules: () => Promise<void>;
   fetchSchedule: (id: number) => Promise<void>;
   createSchedule: (data: CreateScheduleDto) => Promise<void>;
@@ -40,8 +42,8 @@ interface ScheduleState {
   fetchLocations: () => Promise<void>;
   requestReview: (id: number, data: ReviewRequestDto) => Promise<void>;
   processReview: (id: number, data: ReviewResponseDto) => Promise<void>;
-
-  // Error Handling
+  getWeeklySchedule: (params: WeeklyScheduleParams) => Promise<void>;
+  getMonthlySchedule: (params: MonthlyScheduleParams) => Promise<void>;
   clearError: () => void;
 }
 
@@ -58,10 +60,12 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
   filters: DEFAULT_FILTERS,
   isLoading: false,
   error: null,
-  total: 0,
-  page: 1,
-  limit: 10,
-  totalPages: 1,
+  meta: {
+    total: 0,
+    page: 1,
+    limit: 10,
+    totalPages: 1,
+  },
 
   // Filter Actions
   setFilters: (newFilters) => {
@@ -81,20 +85,18 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
     try {
       set({ isLoading: true, error: null });
       const response = await scheduleApi.getSchedules(get().filters);
-      if (!response.data) {
-        throw new Error("Schedule not found");
-      }
+
       set({
         schedules: response.data.data,
-        total: response.data.meta.total,
-        page: response.data.meta.page,
-        limit: response.data.meta.limit,
-        totalPages: response.data.meta.totalPages,
+        meta: response.data.meta,
         isLoading: false,
       });
-    } catch (error: any) {
+    } catch (error) {
       set({
-        error: error.error?.message || "Failed to fetch schedules",
+        error:
+          error instanceof APIError
+            ? error.message
+            : "Failed to fetch schedules",
         isLoading: false,
       });
     }
@@ -104,16 +106,17 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
     try {
       set({ isLoading: true, error: null });
       const response = await scheduleApi.getSchedule(id);
-      if (!response.data) {
-        throw new Error("Schedule not found");
-      }
+
       set({
-        selectedSchedule: response.data.data,
+        selectedSchedule: response.data,
         isLoading: false,
       });
-    } catch (error: any) {
+    } catch (error) {
       set({
-        error: error.error?.message || "Failed to fetch schedule",
+        error:
+          error instanceof APIError
+            ? error.message
+            : "Failed to fetch schedule",
         isLoading: false,
       });
     }
@@ -123,10 +126,13 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
     try {
       set({ isLoading: true, error: null });
       await scheduleApi.createSchedule(data);
-      get().fetchSchedules();
-    } catch (error: any) {
+      await get().fetchSchedules();
+    } catch (error) {
       set({
-        error: error.error?.message || "Failed to create schedule",
+        error:
+          error instanceof APIError
+            ? error.message
+            : "Failed to create schedule",
         isLoading: false,
       });
     }
@@ -136,12 +142,17 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
     try {
       set({ isLoading: true, error: null });
       await scheduleApi.createBulkSchedules(data);
-      get().fetchSchedules();
-    } catch (error: any) {
+      await get().fetchSchedules();
+    } catch (error) {
       set({
-        error: error.error?.message || "Failed to create bulk schedules",
+        error:
+          error instanceof APIError
+            ? error.message
+            : "Failed to create bulk schedules",
         isLoading: false,
       });
+    } finally {
+      set({ isLoading: false });
     }
   },
 
@@ -149,10 +160,13 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
     try {
       set({ isLoading: true, error: null });
       await scheduleApi.updateSchedule(id, data);
-      get().fetchSchedules();
-    } catch (error: any) {
+      await get().fetchSchedules();
+    } catch (error) {
       set({
-        error: error.error?.message || "Failed to update schedule",
+        error:
+          error instanceof APIError
+            ? error.message
+            : "Failed to update schedule",
         isLoading: false,
       });
     }
@@ -162,10 +176,13 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
     try {
       set({ isLoading: true, error: null });
       await scheduleApi.deleteSchedule(id);
-      get().fetchSchedules();
-    } catch (error: any) {
+      await get().fetchSchedules();
+    } catch (error) {
       set({
-        error: error.error?.message || "Failed to delete schedule",
+        error:
+          error instanceof APIError
+            ? error.message
+            : "Failed to delete schedule",
         isLoading: false,
       });
     }
@@ -176,17 +193,16 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
       set({ isLoading: true, error: null });
       const response = await scheduleApi.getLocations();
 
-      if (!response.data) {
-        throw new Error("Locations not found");
-      }
-
       set({
-        locations: response.data,
+        locations: response.data.data,
         isLoading: false,
       });
-    } catch (error: any) {
+    } catch (error) {
       set({
-        error: error.error?.message || "Failed to fetch locations",
+        error:
+          error instanceof APIError
+            ? error.message
+            : "Failed to fetch locations",
         isLoading: false,
       });
     }
@@ -196,10 +212,13 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
     try {
       set({ isLoading: true, error: null });
       await scheduleApi.requestReview(id, data);
-      get().fetchSchedules();
-    } catch (error: any) {
+      await get().fetchSchedules();
+    } catch (error) {
       set({
-        error: error.error?.message || "Failed to request review",
+        error:
+          error instanceof APIError
+            ? error.message
+            : "Failed to request review",
         isLoading: false,
       });
     }
@@ -209,10 +228,51 @@ export const useScheduleStore = create<ScheduleState>((set, get) => ({
     try {
       set({ isLoading: true, error: null });
       await scheduleApi.processReview(id, data);
-      get().fetchSchedules();
-    } catch (error: any) {
+      await get().fetchSchedules();
+    } catch (error) {
       set({
-        error: error.error?.message || "Failed to process review",
+        error:
+          error instanceof APIError
+            ? error.message
+            : "Failed to process review",
+        isLoading: false,
+      });
+    }
+  },
+
+  getWeeklySchedule: async (params) => {
+    try {
+      set({ isLoading: true, error: null });
+      const response = await scheduleApi.getWeeklySchedule(params);
+      set({
+        schedules: response.data.data,
+        isLoading: false,
+      });
+    } catch (error) {
+      set({
+        error:
+          error instanceof APIError
+            ? error.message
+            : "Failed to fetch weekly schedule",
+        isLoading: false,
+      });
+    }
+  },
+
+  getMonthlySchedule: async (params) => {
+    try {
+      set({ isLoading: true, error: null });
+      const response = await scheduleApi.getMonthlySchedule(params);
+      set({
+        schedules: response.data.data,
+        isLoading: false,
+      });
+    } catch (error) {
+      set({
+        error:
+          error instanceof APIError
+            ? error.message
+            : "Failed to fetch monthly schedule",
         isLoading: false,
       });
     }

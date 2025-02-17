@@ -2,32 +2,23 @@ import { AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { APIError } from "@/lib/utils/api.utils";
 
 interface ErrorFallbackProps {
-  /**
-   * Error message to display
-   */
-  message?: string;
-  /**
-   * Optional retry handler
-   */
+  message: string | Error | APIError;
   onRetry?: () => void;
-  /**
-   * Optional className for container
-   */
   className?: string;
-  /**
-   * Optional error details for development
-   */
   details?: string;
 }
 
 export const ErrorFallback = ({
-  message = "An unexpected error occurred",
+  message,
   onRetry,
   className,
   details,
 }: ErrorFallbackProps) => {
+  const errorMessage = message instanceof Error ? message.message : message;
+
   return (
     <Card className={cn("w-full max-w-md p-6", className)}>
       <div className="flex flex-col items-center text-center gap-4">
@@ -36,7 +27,7 @@ export const ErrorFallback = ({
         </div>
 
         <div className="space-y-2">
-          <h3 className="text-lg font-semibold">{message}</h3>
+          <h3 className="text-lg font-semibold">{errorMessage}</h3>
           {details && process.env.NODE_ENV === "development" && (
             <p className="text-sm text-muted-foreground break-words">
               {details}
