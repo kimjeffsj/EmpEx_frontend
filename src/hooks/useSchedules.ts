@@ -2,8 +2,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "./useToast";
 import { scheduleApi } from "@/lib/api/schedule.api";
 import { employeeApi } from "@/lib/api/employee.api";
+import { format } from "date-fns";
 
 import { APIError } from "@/lib/utils/api.utils";
+import { CreateBulkScheduleDto } from "@/types/features/schedule.types";
 
 export function useSchedules({
   startDate,
@@ -20,12 +22,17 @@ export function useSchedules({
     data: scheduleResponse,
     isLoading: isSchedulesLoading,
     error: scheduleError,
+    refetch: refetchSchedules,
   } = useQuery({
-    queryKey: ["schedules", startDate, endDate],
+    queryKey: [
+      "schedules",
+      format(startDate, "yyyy-MM-dd"),
+      format(endDate, "yyyy-MM-dd"),
+    ],
     queryFn: () =>
       scheduleApi.getSchedules({
-        startDate,
-        endDate,
+        startDate: format(startDate, "yyyy-MM-dd"),
+        endDate: format(endDate, "yyyy-MM-dd"),
       }),
   });
 
@@ -48,7 +55,8 @@ export function useSchedules({
 
   // 스케줄 생성 뮤테이션
   const { mutateAsync: createSchedule } = useMutation({
-    mutationFn: scheduleApi.createBulkSchedules,
+    mutationFn: (data: CreateBulkScheduleDto) =>
+      scheduleApi.createBulkSchedules(data),
     onSuccess: () => {
       toast.success("Schedule created successfully");
       queryClient.invalidateQueries({ queryKey: ["schedules"] });
@@ -71,5 +79,6 @@ export function useSchedules({
         ? scheduleError.message
         : scheduleError?.toString(),
     createSchedule,
+    refetchSchedules,
   };
 }

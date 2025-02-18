@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval } from "date-fns";
 import {
   Calendar,
@@ -14,26 +14,37 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CreateScheduleModal } from "@/components/schedule/modals/CreateScheduleModal";
 import { Badge } from "@/components/ui/badge";
-import { useSchedules } from "@/hooks/useSchedules";
+import { useScheduleStore } from "@/store/schedule.store";
 import LoadingSpinner from "@/components/common/loading-spinner";
 import ErrorFallback from "@/components/common/error-fallback";
+import { Timesheet } from "@/types/features/timesheet.types";
 
 export default function SchedulesPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
-  // 스케줄 데이터 로딩
   const {
-    schedules = [],
-    employees = [],
-    locations = [],
+    schedules,
+    locations,
     isLoading,
     error,
-    createSchedule,
-  } = useSchedules({
-    startDate: startOfMonth(currentDate),
-    endDate: endOfMonth(currentDate),
-  });
+    fetchSchedules,
+    fetchLocations,
+    createBulkSchedules,
+  } = useScheduleStore();
+
+  // 월 변경시 데이터 다시 불러오기
+  useEffect(() => {
+    const startOfMonthDate = startOfMonth(currentDate);
+    const endOfMonthDate = endOfMonth(currentDate);
+
+    fetchSchedules({
+      startDate: startOfMonthDate,
+      endDate: endOfMonthDate,
+      limit: 1000, // limit 1000 설정, 1000개의 스케줄까지 한 달력에 표시 가능
+    });
+    fetchLocations();
+  }, [currentDate, fetchSchedules, fetchLocations]);
 
   // 달력에 표시할 날짜들 계산
   const daysInMonth = eachDayOfInterval({
@@ -41,13 +52,38 @@ export default function SchedulesPage() {
     end: endOfMonth(currentDate),
   });
 
-  // 이전/다음 달로 이동
   const handlePreviousMonth = () => {
     setCurrentDate((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1));
   };
 
   const handleNextMonth = () => {
     setCurrentDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1));
+  };
+
+  // 스케줄 생성 후 처리
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleScheduleCreate = async (data: any) => {
+    await createBulkSchedules(data);
+    setIsCreateModalOpen(false);
+  };
+
+  // 날짜별 스케줄 그룹화
+  const getSchedulesForDate = (date: Date): Timesheet[] => {
+    if (!schedules?.length) {
+      return [];
+    }
+
+    const matchingSchedules = schedules.filter((schedule) => {
+      const scheduleDate = new Date(schedule.startTime);
+      const isSameDay =
+        scheduleDate.getDate() === date.getDate() &&
+        scheduleDate.getMonth() === date.getMonth() &&
+        scheduleDate.getFullYear() === date.getFullYear();
+
+      return isSameDay;
+    });
+
+    return matchingSchedules;
   };
 
   if (error) {
@@ -101,17 +137,6 @@ export default function SchedulesPage() {
                 {format(currentDate, "MMMM yyyy")}
               </span>
             </div>
-            <div className="flex gap-2">
-              <Button variant="secondary" size="sm">
-                Month
-              </Button>
-              <Button variant="ghost" size="sm">
-                Week
-              </Button>
-              <Button variant="ghost" size="sm">
-                Day
-              </Button>
-            </div>
           </div>
           <div className="flex items-center gap-3">
             <Button variant="outline" className="gap-2">
@@ -148,18 +173,24 @@ export default function SchedulesPage() {
 
             {/* Calendar Days */}
             {daysInMonth.map((date) => {
-              const daySchedules = schedules.filter(
-                (schedule) =>
-                  format(new Date(schedule.startTime), "yyyy-MM-dd") ===
-                  format(date, "yyyy-MM-dd")
-              );
+              const daySchedules = getSchedulesForDate(date);
+              const isToday =
+                format(date, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd");
 
               return (
                 <div
                   key={date.toISOString()}
-                  className="bg-card min-h-[120px] p-2 hover:bg-accent/50 transition-colors"
+                  className={`bg-card min-h-[120px] p-2 hover:bg-accent/50 transition-colors ${
+                    isToday ? "ring-2 ring-primary" : ""
+                  }`}
                 >
-                  <span className="text-sm text-muted-foreground">
+                  <span
+                    className={`text-sm ${
+                      isToday
+                        ? "text-primary font-bold"
+                        : "text-muted-foreground"
+                    }`}
+                  >
                     {format(date, "d")}
                   </span>
                   <div className="mt-1 space-y-1">
@@ -195,8 +226,7 @@ export default function SchedulesPage() {
       <CreateScheduleModal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
-        onSubmit={createSchedule}
-        employees={employees}
+        onSubmit={handleScheduleCreate}
         locations={locations}
       />
     </div>
