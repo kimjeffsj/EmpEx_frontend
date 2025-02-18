@@ -13,27 +13,22 @@ export const scheduleApi = {
   // 일정 목록 조회
   getSchedules: async (filters: ScheduleFilters) => {
     try {
-      const queryString = createQueryString(filters);
-      return await apiClient.get<ApiResponse<Timesheet[]>>(
+      const queryString = createQueryString({
+        ...filters,
+        startDate: filters.startDate?.toISOString(),
+        endDate: filters.endDate?.toISOString(),
+      });
+
+      // 응답 확인을 위한 로그 추가
+      console.log("Calling getSchedules API...");
+      const response = await apiClient.get<Timesheet[]>(
         `${BASE_PATH}?${queryString}`
       );
+
+      // 올바른 데이터만 반환
+      return response.data;
     } catch (error) {
-      // 에러가 ApiResponse 형태인 경우
-      if (error && typeof error === "object" && "data" in error) {
-        throw error;
-      }
-      // 기타 에러의 경우 기본 에러 응답 생성
-      throw {
-        success: false,
-        data: null,
-        error: {
-          code: "SERVER_ERROR",
-          message:
-            error instanceof Error
-              ? error.message
-              : "An unknown error occurred",
-        },
-      };
+      throw error; // Let the error handler in the store handle this
     }
   },
 
@@ -65,9 +60,11 @@ export const scheduleApi = {
   // 근무 장소 목록 조회
   getLocations: async () => {
     try {
-      return await apiClient.get<ApiResponse<string[]>>(
-        `${BASE_PATH}/locations`
-      );
+      return {
+        success: true,
+        data: ["No 3", "West Minster"],
+      };
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
       return {
         success: true,

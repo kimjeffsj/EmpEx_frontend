@@ -1,13 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import {
-  format,
-  startOfMonth,
-  endOfMonth,
-  eachDayOfInterval,
-  parseISO,
-} from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval } from "date-fns";
 import {
   Calendar,
   Users,
@@ -41,11 +35,14 @@ export default function SchedulesPage() {
 
   // 월 변경시 데이터 다시 불러오기
   useEffect(() => {
+    const startOfMonthDate = startOfMonth(currentDate);
+    const endOfMonthDate = endOfMonth(currentDate);
+
     fetchSchedules({
-      startDate: startOfMonth(currentDate),
-      endDate: endOfMonth(currentDate),
+      startDate: startOfMonthDate,
+      endDate: endOfMonthDate,
+      limit: 1000, // limit 1000 설정, 1000개의 스케줄까지 한 달력에 표시 가능
     });
-    // 위치 정보도 함께 불러오기
     fetchLocations();
   }, [currentDate, fetchSchedules, fetchLocations]);
 
@@ -64,6 +61,7 @@ export default function SchedulesPage() {
   };
 
   // 스케줄 생성 후 처리
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleScheduleCreate = async (data: any) => {
     await createBulkSchedules(data);
     setIsCreateModalOpen(false);
@@ -71,16 +69,21 @@ export default function SchedulesPage() {
 
   // 날짜별 스케줄 그룹화
   const getSchedulesForDate = (date: Date): Timesheet[] => {
-    if (!schedules) return [];
+    if (!schedules?.length) {
+      return [];
+    }
 
-    return schedules.filter((schedule) => {
-      const scheduleDate = parseISO(schedule.startTime);
-      return (
+    const matchingSchedules = schedules.filter((schedule) => {
+      const scheduleDate = new Date(schedule.startTime);
+      const isSameDay =
         scheduleDate.getDate() === date.getDate() &&
         scheduleDate.getMonth() === date.getMonth() &&
-        scheduleDate.getFullYear() === date.getFullYear()
-      );
+        scheduleDate.getFullYear() === date.getFullYear();
+
+      return isSameDay;
     });
+
+    return matchingSchedules;
   };
 
   if (error) {
@@ -133,17 +136,6 @@ export default function SchedulesPage() {
               <span className="text-lg font-semibold ml-2">
                 {format(currentDate, "MMMM yyyy")}
               </span>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="secondary" size="sm">
-                Month
-              </Button>
-              <Button variant="ghost" size="sm">
-                Week
-              </Button>
-              <Button variant="ghost" size="sm">
-                Day
-              </Button>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -208,8 +200,8 @@ export default function SchedulesPage() {
                         className="text-xs p-1 rounded bg-primary/10 cursor-pointer hover:bg-primary/20"
                       >
                         <div className="font-medium">
-                          {format(parseISO(schedule.startTime), "HH:mm")} -
-                          {format(parseISO(schedule.endTime), "HH:mm")}
+                          {format(new Date(schedule.startTime), "HH:mm")} -
+                          {format(new Date(schedule.endTime), "HH:mm")}
                         </div>
                         <div className="truncate">
                           {schedule.employee.firstName}{" "}

@@ -56,18 +56,10 @@ export const useScheduleStore = create<ScheduleState>((set) => ({
       set({ isLoading: true, error: null });
       const response = await scheduleApi.getSchedules(filters);
 
-      if (response.success && response.data) {
-        set({
-          schedules: response.data.data,
-          meta: response.meta || {
-            total: 0,
-            page: 1,
-            limit: 10,
-            totalPages: 1,
-          },
-          isLoading: false,
-        });
-      }
+      set({
+        schedules: response,
+        isLoading: false,
+      });
     } catch (error) {
       set({
         error:

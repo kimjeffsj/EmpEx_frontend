@@ -1,8 +1,5 @@
-"use client";
-
-import * as React from "react";
 import { Calendar as CalendarIcon, Clock } from "lucide-react";
-import { format } from "date-fns";
+import { format, addMinutes, setHours, setMinutes, isValid } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -18,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useState } from "react";
 
 interface TimeRangePickerProps {
   startDate: Date;
@@ -40,51 +38,71 @@ export function TimeRangePicker({
   disabled,
   className,
 }: TimeRangePickerProps) {
-  const formatTimeForInput = (date: Date) => {
-    return format(date, "hh:mm a"); // 12시간 형식으로 변경 (AM/PM 포함)
-  };
+  const [hasStartTime, setHasStartTime] = useState(false);
+  const [hasEndTime, setHasEndTime] = useState(false);
 
-  const timeOptions = () => {
+  // 시간 옵션 생성 (10 AM to 12 AM)
+  const generateTimeOptions = () => {
     const options = [];
-    // 10 AM부터 12 AM(자정)까지
-    for (let hour = 10; hour <= 24; hour++) {
-      const displayHour = hour > 12 ? hour - 12 : hour; // 12시간 형식으로 변환
+    const interval = 15; // 15분 간격
+
+    // 시작 시간을 10시로 설정
+    let currentTime = new Date();
+    currentTime = setHours(currentTime, 10);
+    currentTime = setMinutes(currentTime, 0);
+
+    // 자정까지 15분 간격으로 시간 옵션 생성
+    const endTime = setHours(new Date(), 24);
+
+    while (currentTime <= endTime) {
+      const hour = currentTime.getHours();
+      const minute = currentTime.getMinutes();
+      const formattedHour = hour > 12 ? hour - 12 : hour;
       const period = hour >= 12 && hour < 24 ? "PM" : "AM";
 
-      for (let minute = 0; minute < 60; minute += 15) {
-        // 24시(12 AM)인 경우 00:00만 추가
-        if (hour === 24 && minute > 0) continue;
+      const timeString = format(currentTime, "HH:mm");
+      const displayString = `${formattedHour}:${minute
+        .toString()
+        .padStart(2, "0")} ${period}`;
 
-        const timeString = `${displayHour.toString().padStart(2, "0")}:${minute
-          .toString()
-          .padStart(2, "0")} ${period}`;
-        options.push({
-          label: timeString,
-          value: `${hour.toString().padStart(2, "0")}:${minute
-            .toString()
-            .padStart(2, "0")}`,
-        });
-      }
+      options.push({
+        value: timeString,
+        label: displayString,
+      });
+
+      currentTime = addMinutes(currentTime, interval);
     }
+
     return options;
   };
+
+  const timeOptions = generateTimeOptions();
 
   const handleTimeSelect = (
     timeStr: string,
     date: Date,
-    onChange: (date: Date) => void
+    onChange: (date: Date) => void,
+    setHasTime: (has: boolean) => void
   ) => {
+    if (timeStr === "select") return;
+
     const [hours, minutes] = timeStr.split(":").map(Number);
     const newDate = new Date(date);
     newDate.setHours(hours);
     newDate.setMinutes(minutes);
     onChange(newDate);
+    setHasTime(true);
   };
 
   const isDateDisabled = (date: Date) => {
     if (minDate && date < minDate) return true;
     if (maxDate && date > maxDate) return true;
     return false;
+  };
+
+  const getTimeString = (date: Date, hasTime: boolean) => {
+    if (!hasTime) return "select";
+    return format(date, "HH:mm");
   };
 
   return (
@@ -110,7 +128,14 @@ export function TimeRangePicker({
               <Calendar
                 mode="single"
                 selected={startDate}
-                onSelect={(date) => date && onStartDateChange(date)}
+                onSelect={(date) => {
+                  if (date) {
+                    const newDate = new Date(date);
+                    newDate.setHours(0, 0, 0, 0);
+                    onStartDateChange(newDate);
+                    setHasStartTime(false);
+                  }
+                }}
                 disabled={isDateDisabled}
                 initialFocus
               />
@@ -118,22 +143,26 @@ export function TimeRangePicker({
           </Popover>
 
           <Select
-            disabled={disabled}
-            defaultValue="select"
-            value={formatTimeForInput(startDate) ?? "select"}
+            disabled={disabled || !isValid(startDate)}
+            value={getTimeString(startDate, hasStartTime)}
             onValueChange={(value) =>
-              handleTimeSelect(value, startDate, onStartDateChange)
+              handleTimeSelect(
+                value,
+                startDate,
+                onStartDateChange,
+                setHasStartTime
+              )
             }
           >
             <SelectTrigger className="w-full">
               <Clock className="mr-2 h-4 w-4 text-muted-foreground" />
-              <SelectValue defaultValue="select">Select Time</SelectValue>
+              <SelectValue placeholder="Start Time">
+                {hasStartTime ? format(startDate, "hh:mm a") : "Start Time"}
+              </SelectValue>
             </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="select" disabled>
-                Select time
-              </SelectItem>
-              {timeOptions().map((time) => (
+            <SelectContent className="max-h-60 overflow-y-auto">
+              <SelectItem value="select">Start Time</SelectItem>
+              {timeOptions.map((time) => (
                 <SelectItem key={time.value} value={time.value}>
                   {time.label}
                 </SelectItem>
@@ -164,7 +193,14 @@ export function TimeRangePicker({
               <Calendar
                 mode="single"
                 selected={endDate}
-                onSelect={(date) => date && onEndDateChange(date)}
+                onSelect={(date) => {
+                  if (date) {
+                    const newDate = new Date(date);
+                    newDate.setHours(0, 0, 0, 0);
+                    onEndDateChange(newDate);
+                    setHasEndTime(false);
+                  }
+                }}
                 disabled={(date) => isDateDisabled(date) || date < startDate}
                 initialFocus
               />
@@ -172,24 +208,21 @@ export function TimeRangePicker({
           </Popover>
 
           <Select
-            disabled={disabled}
-            defaultValue="select"
-            value={formatTimeForInput(endDate) ?? "select"}
+            disabled={disabled || !isValid(endDate)}
+            value={getTimeString(endDate, hasEndTime)}
             onValueChange={(value) =>
-              handleTimeSelect(value, endDate, onEndDateChange)
+              handleTimeSelect(value, endDate, onEndDateChange, setHasEndTime)
             }
           >
             <SelectTrigger className="w-full">
               <Clock className="mr-2 h-4 w-4 text-muted-foreground" />
-              <SelectValue defaultValue="select">
-                <SelectValue defaultValue="select">Select Time</SelectValue>
+              <SelectValue placeholder="End Time">
+                {hasEndTime ? format(endDate, "hh:mm a") : "End Time"}
               </SelectValue>
             </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="select" disabled>
-                Select time
-              </SelectItem>
-              {timeOptions().map((time) => (
+            <SelectContent className="max-h-60 overflow-y-auto">
+              <SelectItem value="select">End Time</SelectItem>
+              {timeOptions.map((time) => (
                 <SelectItem key={time.value} value={time.value}>
                   {time.label}
                 </SelectItem>
