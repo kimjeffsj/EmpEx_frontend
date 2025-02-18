@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { UserPlus } from "lucide-react";
@@ -11,6 +11,7 @@ import { useEmployeeStore } from "@/store/employee.store";
 import ErrorFallback from "@/components/common/error-fallback";
 import { formatDate } from "@/lib/utils/date.utils";
 import { Employee } from "@/types/features/employee.types";
+import CreateEmployeeModal from "@/components/employees/modals/addEmployeesModal";
 
 const columns: Column<Employee>[] = [
   {
@@ -50,6 +51,8 @@ const columns: Column<Employee>[] = [
 
 export default function EmployeesPage() {
   const router = useRouter();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   const {
     employees,
     isLoading,
@@ -71,10 +74,6 @@ export default function EmployeesPage() {
     [router]
   );
 
-  const handleCreateNew = useCallback(() => {
-    router.push("/manager/employees/new");
-  }, [router]);
-
   const handleSearch = useCallback(
     (value: string) => {
       setFilters({ search: value, page: 1 });
@@ -88,6 +87,11 @@ export default function EmployeesPage() {
     },
     [setFilters]
   );
+
+  const handleSuccess = () => {
+    // Refresh employee list
+    fetchEmployees();
+  };
 
   if (error) {
     return <ErrorFallback message={error} onRetry={fetchEmployees} />;
@@ -103,11 +107,17 @@ export default function EmployeesPage() {
             Manage your employee information and records
           </p>
         </div>
-        <Button onClick={handleCreateNew}>
+        <Button onClick={() => setIsModalOpen(true)}>
           <UserPlus className="mr-2 h-4 w-4" />
           Add Employee
         </Button>
       </div>
+
+      <CreateEmployeeModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSuccess={handleSuccess}
+      />
 
       {/* Content */}
       <Card>
